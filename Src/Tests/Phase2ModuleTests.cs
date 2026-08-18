@@ -1,4 +1,6 @@
+using System.Reflection;
 using HardwareAuditToolkit.App.Modules;
+using HardwareAuditToolkit.App.ViewModels;
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -99,5 +101,29 @@ public class Phase2ModuleTests
         });
 
         Assert.Null(ex);
+    }
+
+    [Fact]
+    public void App_ConfigureServices_RegistersModuleViewModels()
+    {
+        // Regression guard for the Phase 2 wiring. NavigationService navigates to the
+        // System Info and CPU stress screens via GetRequiredService<SystemInfoModuleViewModel>
+        // / GetRequiredService<CpuStressModuleViewModel>. If those view models are not
+        // registered, navigation throws InvalidOperationException and no hardware info is
+        // shown. Assert the descriptors exist (and are transient, since they are disposed on
+        // navigation-away) so a future cleanup cannot silently drop the registration.
+        var services = new ServiceCollection();
+        var configure = typeof(HardwareAuditToolkit.App.App).GetMethod(
+            "ConfigureServices", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(configure);
+        configure!.Invoke(null, new object[] { services });
+
+        var infoDescriptor = Assert.Single(
+            services, d => d.ServiceType == typeof(SystemInfoModuleViewModel));
+        var stressDescriptor = Assert.Single(
+            services, d => d.ServiceType == typeof(CpuStressModuleViewModel));
+
+        Assert.Equal(ServiceLifetime.Transient, infoDescriptor.Lifetime);
+        Assert.Equal(ServiceLifetime.Transient, stressDescriptor.Lifetime);
     }
 }
