@@ -1,0 +1,116 @@
+<UserControl x:Class="HardwareAuditToolkit.App.Views.MonitorTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:HardwareAuditToolkit.App.ViewModels"
+             xmlns:views="clr-namespace:HardwareAuditToolkit.App.Views"
+             xmlns:conv="clr-namespace:HardwareAuditToolkit.App.Converters"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:MonitorTestModuleViewModel}"
+             d:DesignHeight="540" d:DesignWidth="900">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
+    </UserControl.Resources>
+
+    <Grid Background="#1E1E1E">
+        <!-- Reusable mouse-only exit path, pinned top-right (§6). -->
+        <views:ExitOverlay HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16" />
+
+        <Grid Margin="20,16,20,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Monitor Test" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
+
+            <ScrollViewer Grid.Row="1" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- Display picker (reacts to WM_DISPLAYCHANGE via the view model). -->
+                    <TextBlock Text="Target display" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" />
+                    <ComboBox ItemsSource="{Binding Monitors}"
+                              SelectedItem="{Binding SelectedMonitor, Mode=TwoWay}"
+                              Margin="0,6,0,0" MinWidth="320" MaxWidth="420"
+                              HorizontalAlignment="Left">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding FriendlyName}" />
+                                    <TextBlock Text="{Binding Width, StringFormat='  ({0}'}" Foreground="#AAAAAA" Margin="6,0,0,0" />
+                                    <TextBlock Text="{Binding Height, StringFormat='x{0})'}" Foreground="#AAAAAA" />
+                                    <TextBlock Text="  primary" Foreground="#9AE6B0" Margin="6,0,0,0"
+                                               Visibility="{Binding IsPrimary, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <!-- DDC/CI brightness control. -->
+                    <Border Margin="0,14,0,0" Padding="12" CornerRadius="8"
+                            Background="#252526" BorderBrush="#3F3F46" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8">DDC/CI brightness</TextBlock>
+                            <TextBlock Text="{Binding DdcDetail}" FontSize="12" Foreground="#BBBBBB" Margin="0,4,0,0" />
+                            <Grid Margin="0,8,0,0" IsEnabled="{Binding DdcSupported}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="BrightnessSlider"
+                                        Minimum="{Binding BrightnessMin}"
+                                        Maximum="{Binding BrightnessMax}"
+                                        Value="{Binding BrightnessCurrent, Mode=OneWay}"
+                                        TickFrequency="1" IsSnapToTickEnabled="True"
+                                        ValueChanged="BrightnessSlider_ValueChanged" />
+                                <TextBlock Grid.Column="1" Text="{Binding BrightnessCurrent, StringFormat='{}{0}%'}"
+                                           Foreground="#E8E8E8" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           Width="46" />
+                            </Grid>
+                            <TextBlock Text="Adjusting brightness is best-effort; greyed out when DDC/CI is unsupported."
+                                       FontSize="11" Foreground="#888888" Margin="0,6,0,0"
+                                       Visibility="{Binding DdcSupported, Converter={StaticResource InverseBoolToVis}}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Pattern picker. -->
+                    <TextBlock Text="Pattern" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" Margin="0,14,0,0" />
+                    <ComboBox ItemsSource="{Binding Patterns}"
+                              SelectedItem="{Binding CurrentPattern, Mode=TwoWay}"
+                              Margin="0,6,0,0" MinWidth="240" MaxWidth="320"
+                              HorizontalAlignment="Left" />
+                    <Button Content="Show fullscreen pattern" Command="{Binding ShowPatternCommand}"
+                            Padding="14,8" FontSize="13" Margin="0,10,0,0" HorizontalAlignment="Left"
+                            Background="#27632A" Foreground="White" BorderBrush="#1E4D20" BorderThickness="1" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Margin="0,14,0,0">
+                <TextBlock Text="{Binding DeviceWarning}" FontSize="12" Foreground="#E67E22"
+                           Margin="0,0,0,8" Visibility="{Binding IsDeviceWarning, Converter={StaticResource BoolToVis}}" />
+                <TextBlock Text="{Binding StatusDetail}" FontSize="12" Foreground="#9AAA9A" Margin="0,0,0,10"
+                           Visibility="{Binding IsCompleted, Converter={StaticResource InverseBoolToVis}}" />
+                <TextBlock Text="{Binding FinalStatusText}" FontSize="14" FontWeight="SemiBold" Foreground="#FFD479"
+                           Margin="0,0,0,10" Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}" />
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Start test" Command="{Binding StartTestCommand}"
+                            Padding="18,9" FontSize="14" FontWeight="SemiBold"
+                            Background="#27632A" Foreground="White" BorderBrush="#1E4D20" BorderThickness="1" />
+                    <Button Content="Confirm patterns OK" Command="{Binding ConfirmCommand}"
+                            Padding="18,9" FontSize="14" FontWeight="SemiBold" Margin="12,0,0,0"
+                            Background="#2D6CA3" Foreground="White" BorderBrush="#1E4D70" BorderThickness="1" />
+                    <Button Content="Flag defect" Command="{Binding FlagDefectCommand}"
+                            Padding="18,9" FontSize="14" FontWeight="SemiBold" Margin="12,0,0,0"
+                            Background="#C0392B" Foreground="White" BorderBrush="#922B21" BorderThickness="1" />
+                    <Button Content="Reset" Command="{Binding ResetCommand}"
+                            Padding="16,9" FontSize="14" Margin="12,0,0,0" />
+                    <Button Content="Back to dashboard" Command="{Binding BackCommand}"
+                            Padding="16,9" FontSize="14" Margin="12,0,0,0" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

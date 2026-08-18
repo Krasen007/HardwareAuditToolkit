@@ -142,7 +142,7 @@ public class MouseModuleTests
         Assert.Single(services, d => d.ServiceType == typeof(MouseTestModuleViewModel)
                                      && d.Lifetime == ServiceLifetime.Transient);
         Assert.Single(services, d => d.ServiceType == typeof(IRawMouseInput));
-        Assert.Equal(4, services.Count(d => d.ServiceType == typeof(ITestModule)));
+        Assert.Equal(5, services.Count(d => d.ServiceType == typeof(ITestModule)));
     }
 
     private static ModuleResult GetSessionResult(TestOrchestrator orchestrator)

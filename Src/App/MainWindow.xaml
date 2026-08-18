@@ -29,6 +29,9 @@
         <DataTemplate DataType="{x:Type vm:MouseTestModuleViewModel}">
             <views:MouseTestView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MonitorTestModuleViewModel}">
+            <views:MonitorTestView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

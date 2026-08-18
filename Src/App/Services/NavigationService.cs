@@ -25,6 +25,7 @@ public sealed class NavigationService : INavigationService
             "stress" => _services.GetRequiredService<CpuStressModuleViewModel>(),
             "keyboard" => _services.GetRequiredService<KeyboardTestModuleViewModel>(),
             "mouse" => _services.GetRequiredService<MouseTestModuleViewModel>(),
+            "monitor" => _services.GetRequiredService<MonitorTestModuleViewModel>(),
             _ => ActivatorUtilities.CreateInstance<ModulePlaceholderViewModel>(_services, moduleId, this),
         };
 

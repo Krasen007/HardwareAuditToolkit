@@ -160,6 +160,11 @@ public partial class App : Application
         services.AddSingleton<MouseTestModule>();
         services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<MouseTestModule>());
 
+        // Phase 5 — monitor test: DDC/CI control + the exclusive module.
+        services.AddSingleton<IDdcCiControl, DdcCiControl>();
+        services.AddSingleton<MonitorTestModule>();
+        services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<MonitorTestModule>());
+
         // Phase 2 — module screen view models. NavigationService resolves these per
         // navigation, and each instance registers event-bus subscriptions in its
         // constructor and is disposed when its screen is left (NavigationService
@@ -169,6 +174,7 @@ public partial class App : Application
         services.AddTransient<CpuStressModuleViewModel>();
         services.AddTransient<KeyboardTestModuleViewModel>();
         services.AddTransient<MouseTestModuleViewModel>();
+        services.AddTransient<MonitorTestModuleViewModel>();
 
         // Core orchestrator owns the module set and the session.
         var session = new AuditSession

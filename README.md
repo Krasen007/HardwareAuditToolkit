@@ -75,9 +75,20 @@ Outputs land in `Src\App\bin\publish\`.
    duck-outline tracing sub-screen (held-button trace scored by path coverage)
    launches from within the module like the keyboard WPM sub-screen. 30 tests pass
    (orchestrator + `KeyboardModuleTests` + `Phase2ModuleTests` + `MouseModuleTests`).
-- **Phase 5 (monitor test) — next:** see the architecture doc §10 and the existing
-   Phase 3/4 patterns (raw input + vector layout + exclusive module + sub-screen)
-   for where to hook it in.
+- **Phase 5 (monitor test) — done:** `DdcCiControl` (Infrastructure, `dxva2.dll`
+   wrapper) with graceful "unsupported" handling; exclusive `MonitorTestModule`
+   (DDC/CI brightness is best-effort and degrades to a clean "unsupported"
+   reading, so the module can still Pass on operator confirmation alone);
+   `MonitorTestModuleViewModel` + `MonitorTestView` via `NavigationService` +
+   `MainWindow` data templates; a live multi-monitor picker that reacts to
+   `WM_DISPLAYCHANGE` (`DeviceTopologyChangedMessage`); and a fullscreen
+   `MonitorPatternWindow` using the auto-hiding Exit overlay + Ctrl+E (§6) placed
+   on the selected display via `SetWindowPos` in raw device pixels so it lands
+   correctly across mixed-DPI setups (§9.4). 36 tests pass (orchestrator +
+   `KeyboardModuleTests` + `Phase2ModuleTests` + `MouseModuleTests` +
+   `MonitorModuleTests`).
+- **Phase 6 (reporting) — next:** see the architecture doc §10 and the existing
+   Phase 2–5 patterns for where to hook it in.
 
 ---
 
