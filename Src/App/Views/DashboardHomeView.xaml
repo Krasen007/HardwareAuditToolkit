@@ -1,4 +1,4 @@
-<UserControl x:Class="HardwareAuditToolkit.App.Views.DashboardView"
+<UserControl x:Class="HardwareAuditToolkit.App.Views.DashboardHomeView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -59,13 +59,13 @@
             <StackPanel>
                 <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8">
                     <Run Text="Connected devices — Keyboards:" />
-                    <Run Text="{Binding DataContext.DeviceChange.KeyboardCount, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Run Text="{Binding DataContext.DeviceChange.KeyboardCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
                     <Run Text="  Mice:" />
-                    <Run Text="{Binding DataContext.DeviceChange.MouseCount, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Run Text="{Binding DataContext.DeviceChange.MouseCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
                     <Run Text="  Monitors:" />
-                    <Run Text="{Binding DataContext.DeviceChange.MonitorCount, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <Run Text="{Binding DataContext.DeviceChange.MonitorCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
                 </TextBlock>
-                <TextBlock Text="{Binding DataContext.DeviceChange.LastEvent, RelativeSource={RelativeSource AncestorType=Window}}"
+                <TextBlock Text="{Binding DataContext.DeviceChange.LastEvent, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                            FontSize="11" Foreground="#999999" Margin="0,4,0,0" />
             </StackPanel>
         </Border>

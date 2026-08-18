@@ -83,7 +83,7 @@ section. Everything below reflects the **current, verified** Phase 2 state.
 | Session / result / measurement models | `Src/Core/AuditSession.cs` |
 | DI shell, exit flow, singleton wiring | `Src/App/App.xaml.cs` (`ConfigureServices`) |
 | Screen switching | `Src/App/Services/NavigationService.cs` + `MainWindow.xaml` data templates |
-| Dashboard (module list) | `Src/App/ViewModels/DashboardViewModel.cs` + `Views/DashboardView.xaml` |
+| Dashboard (module list) | `Src/App/ViewModels/DashboardViewModel.cs` + `Views/DashboardHomeView.xaml` |
 | Module stub screen (keyboard/mouse/monitor) | `Src/App/Views/ModulePlaceholderView.xaml` (+ VM) |
 | Exit overlay & hotkey | `Src/App/Views/ExitOverlay.xaml`, `Services/ExitHotkeyService.cs` |
 | Live device-change listener (raw input already registered) | `Src/App/Services/DeviceChangeService.cs` (registers `RIDEV_INPUTSINK`/`RIDEV_DEVNOTIFY` for keyboard usage 0x06) |

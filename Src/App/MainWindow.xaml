@@ -12,7 +12,7 @@
     <Window.Resources>
         <!-- ViewModel-first navigation: the content region renders the current screen. -->
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
-            <views:DashboardView />
+            <views:DashboardHomeView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ModulePlaceholderViewModel}">
             <views:ModulePlaceholderView />
