@@ -1,0 +1,286 @@
+using System.Threading;
+using CommunityToolkit.Mvvm.Messaging;
+using HardwareAuditToolkit.Core;
+using HardwareAuditToolkit.Infrastructure;
+
+namespace HardwareAuditToolkit.App.Modules;
+
+/// <summary>
+/// <para>
+/// Phase 2 — CPU stress / burn-in module (architecture §8). Loads every logical
+/// core with one worker thread per core, all at <see cref="ThreadPriority.BelowNormal"/>
+/// so the OS still favors the UI and the Ctrl+E hook thread under contention.
+/// </para>
+/// <para>
+/// There is no automatic thermal cutoff in v1 (temperature access is best-effort
+/// and cannot be relied upon), so the run is bounded by a fixed duration cap
+/// (<see cref="Duration"/>, default 5 minutes) with a prominent manual Stop and
+/// the global exit paths (§6) always available. Telemetry — elapsed time, total
+/// CPU load, and any available core temperatures — is published on the event bus
+/// as <see cref="Messages.StressTelemetryMessage"/> so the view stays live.
+/// </para>
+/// <para>
+/// Completing the full duration resolves as <see cref="TestStatus.Passed"/>; an
+/// operator- or orchestrator-initiated early stop resolves as
+/// <see cref="TestStatus.Cancelled"/> (architecture §4).
+/// </para>
+/// </summary>
+public sealed class CpuStressModule : ITestModule
+{
+    public const int DefaultDurationSeconds = 300; // §8 conservative fixed cap.
+
+    private readonly ISensorProvider _sensors;
+    private readonly object _gate = new();
+    private ModulePhase _phase = ModulePhase.NotStarted;
+    private Action<TestStatus>? _onComplete;
+    private Thread[] _workers = Array.Empty<Thread>();
+    private CancellationTokenSource? _cts;
+    private Timer? _telemetryTimer;
+    private DateTime _startedAt;
+    private int _coreCount;
+    private TimeSpan _duration = TimeSpan.FromSeconds(DefaultDurationSeconds);
+
+    public CpuStressModule(ISensorProvider sensors)
+    {
+        _sensors = sensors;
+        Metadata = new StressMetadata();
+    }
+
+    public IModuleMetadata Metadata { get; }
+
+    public string ModuleId => "stress";
+
+    public ModulePhase CurrentPhase
+    {
+        get => _phase;
+        private set => _phase = value;
+    }
+
+    public bool IsRunning => _phase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
+
+    public IList<ModuleMeasurement> Measurements { get; } = new List<ModuleMeasurement>();
+
+    public IList<string> Findings { get; } = new List<string>();
+
+    public IList<string> OperatorActions { get; } = new List<string>();
+
+    public IList<string> Artifacts { get; } = new List<string>();
+
+    /// <summary>
+    /// Target run duration. Bounded to <see cref="DefaultDurationSeconds"/> so the
+    /// §8 cap can never be exceeded (the orchestrator timeout is a backstop for
+    /// this). Set before calling <see cref="Start"/>.
+    /// </summary>
+    public TimeSpan Duration
+    {
+        get => _duration;
+        set
+        {
+            var capped = value <= TimeSpan.Zero ? TimeSpan.FromSeconds(DefaultDurationSeconds) : value;
+            if (capped.TotalSeconds > DefaultDurationSeconds)
+            {
+                capped = TimeSpan.FromSeconds(DefaultDurationSeconds);
+            }
+
+            _duration = capped;
+        }
+    }
+
+    public bool CheckPreconditions() => true;
+
+    public void Start(Action<TestStatus> onComplete)
+    {
+        lock (_gate)
+        {
+            if (IsRunning)
+            {
+                return;
+            }
+
+            _onComplete = onComplete;
+            _cts = new CancellationTokenSource();
+            _startedAt = DateTime.UtcNow;
+            CurrentPhase = ModulePhase.Running;
+            Measurements.Clear();
+            Findings.Clear();
+            OperatorActions.Clear();
+            Artifacts.Clear();
+
+            int cores = Environment.ProcessorCount;
+            _coreCount = cores;
+            _workers = new Thread[cores];
+            for (int i = 0; i < cores; i++)
+            {
+                var worker = new Thread(() => Burn(_cts.Token))
+                {
+                    IsBackground = true,
+                    Priority = ThreadPriority.BelowNormal,
+                    Name = $"CpuStress-{i}",
+                };
+                _workers[i] = worker;
+                worker.Start();
+            }
+
+            Findings.Add($"Burn-in started on {cores} logical cores at BelowNormal priority; target duration {_duration:g}.");
+
+            // Live telemetry, then self-stop at the duration cap.
+            _telemetryTimer = new Timer(_ => PublishTelemetry(running: true), null, 0, 1000);
+            Task.Delay(_duration, _cts.Token)
+                .ContinueWith(_ => CompleteNaturally(), TaskScheduler.Default);
+        }
+    }
+
+    public void Cancel()
+    {
+        TestStatus? final = null;
+        lock (_gate)
+        {
+            if (!IsRunning)
+            {
+                return;
+            }
+
+            final = TestStatus.Cancelled;
+            StopWorkers(final.Value);
+        }
+    }
+
+    private void CompleteNaturally()
+    {
+        lock (_gate)
+        {
+            if (!IsRunning)
+            {
+                return;
+            }
+
+            StopWorkers(TestStatus.Passed);
+        }
+    }
+
+    /// <summary>
+    /// Tears down workers/timers, records the result, and publishes a final
+    /// telemetry sample. Caller must hold <see cref="_gate"/>.
+    /// </summary>
+    private void StopWorkers(TestStatus finalStatus)
+    {
+        _telemetryTimer?.Dispose();
+        _telemetryTimer = null;
+
+        _cts?.Cancel();
+        JoinWorkers();
+
+        CurrentPhase = finalStatus == TestStatus.Passed ? ModulePhase.Complete : ModulePhase.Cancelled;
+        Findings.Add(finalStatus == TestStatus.Passed
+            ? $"Burn-in completed the full target duration of {_duration:g}."
+            : "Burn-in stopped before completing the target duration.");
+
+        PublishTelemetry(running: false, finalStatus);
+        var cb = _onComplete;
+        _onComplete = null;
+        cb?.Invoke(finalStatus);
+    }
+
+    private void JoinWorkers()
+    {
+        foreach (var worker in _workers)
+        {
+            try
+            {
+                worker.Join(TimeSpan.FromSeconds(5));
+            }
+            catch
+            {
+                // Best-effort join on shutdown.
+            }
+        }
+
+        _workers = Array.Empty<Thread>();
+        _cts?.Dispose();
+        _cts = null;
+    }
+
+    /// <summary>
+    /// Tight arithmetic loop to keep each core saturated. The result is consumed
+    /// so the JIT cannot optimize the loop away.
+    /// </summary>
+    private static void Burn(CancellationToken token)
+    {
+        double accumulator = 1.0;
+        while (!token.IsCancellationRequested)
+        {
+            for (int k = 0; k < 20000; k++)
+            {
+                accumulator = Math.Sqrt(accumulator + k * 0.0001) + Math.Sin(k);
+            }
+
+            // Tiny yield so a hard spin doesn't completely starve other
+            // BelowNormal work on the same core; the core is still loaded.
+            if ((k_yield++ & 0x3FF) == 0)
+            {
+                Thread.Yield();
+            }
+        }
+
+        _ = accumulator;
+    }
+
+    // Local counter for the occasional yield above (avoids a field on the
+    // module shared across threads).
+    [ThreadStatic]
+    private static int k_yield;
+
+    private void PublishTelemetry(bool running, TestStatus? final = null)
+    {
+        double? load = null;
+        var temps = new List<float?>();
+        try
+        {
+            foreach (var reading in _sensors.ReadAll())
+            {
+                bool cpu = reading.SensorName.Contains("CPU", StringComparison.OrdinalIgnoreCase) ||
+                           reading.HardwareName.Contains("CPU", StringComparison.OrdinalIgnoreCase);
+                if (!cpu)
+                {
+                    continue;
+                }
+
+                if (reading.SensorType == "Temperature")
+                {
+                    temps.Add(reading.Value);
+                }
+                else if (reading.SensorType == "Load" &&
+                         reading.SensorName.Contains("Total", StringComparison.OrdinalIgnoreCase))
+                {
+                    load = reading.Value;
+                }
+            }
+        }
+        catch
+        {
+            // Sensor read is best-effort; telemetry degrades to N/A.
+        }
+
+        WeakReferenceMessenger.Default.Send(new Messages.StressTelemetryMessage
+        {
+            CoreCount = _coreCount,
+            Elapsed = _startedAt == default ? TimeSpan.Zero : DateTime.UtcNow - _startedAt,
+            TargetDuration = _duration,
+            CpuLoadPercent = load,
+            CoreTempsCelsius = temps,
+            Running = running,
+            FinalStatus = final,
+        });
+    }
+
+    private sealed class StressMetadata : IModuleMetadata
+    {
+        public string Id => "stress";
+        public string DisplayName => "CPU Stress Test";
+        public string Description => "Fixed-duration burn-in across all cores.";
+        public string Category => "stress";
+        public string[] RequiredCapabilities => Array.Empty<string>();
+        public bool IsExclusive => true;
+        public TimeSpan? MaxDuration => TimeSpan.FromSeconds(DefaultDurationSeconds + 10);
+    }
+}

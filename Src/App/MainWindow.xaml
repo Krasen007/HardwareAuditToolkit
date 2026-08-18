@@ -17,6 +17,12 @@
         <DataTemplate DataType="{x:Type vm:ModulePlaceholderViewModel}">
             <views:ModulePlaceholderView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SystemInfoModuleViewModel}">
+            <views:SystemInfoView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CpuStressModuleViewModel}">
+            <views:CpuStressView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

@@ -2,9 +2,11 @@ using System.ComponentModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.App.Messages;
+using HardwareAuditToolkit.App.Modules;
 using HardwareAuditToolkit.App.Services;
 using HardwareAuditToolkit.App.ViewModels;
 using HardwareAuditToolkit.Core;
+using HardwareAuditToolkit.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HardwareAuditToolkit.App;
@@ -76,6 +78,11 @@ public partial class App : Application
         // §9.5 — live device-change listener.
         _deviceChange = deviceChange;
         _deviceChange.Start();
+
+        // Phase 2 — start best-effort sensor polling so the event bus carries
+        // live thermal/load data from the first module that needs it.
+        var sensors = _services.GetRequiredService<ISensorProvider>();
+        sensors.Start();
     }
 
     /// <summary>
@@ -132,7 +139,18 @@ public partial class App : Application
         services.AddSingleton<ExitHotkeyService>();
         services.AddSingleton<INavigationService, NavigationService>();
 
-        // Core orchestrator owns the (currently empty) module set and the session.
+        // Phase 2 — providers and modules.
+        services.AddSingleton<SystemInfoProvider>();
+        services.AddSingleton<ISensorProvider, LibreHardwareMonitorSensorProvider>();
+        services.AddSingleton<SystemInfoModule>();
+        services.AddSingleton<CpuStressModule>();
+        // Register the modules as ITestModule so the orchestrator discovers them
+        // via IEnumerable<ITestModule>; the concrete singletons guarantee the same
+        // instance the view models drive.
+        services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<SystemInfoModule>());
+        services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<CpuStressModule>());
+
+        // Core orchestrator owns the module set and the session.
         var session = new AuditSession
         {
             SessionId = Guid.NewGuid().ToString("N"),
