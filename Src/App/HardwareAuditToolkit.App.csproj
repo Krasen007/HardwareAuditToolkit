@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    App: WPF host / shell. Wires up DI, the single-instance enforcer (§9.3),
+    and the per-monitor V2 DPI manifest (§9.4). Publish profiles live in
+    Properties\PublishProfiles (primary single-file + folder fallback, §9.1).
+  -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <AssemblyName>HardwareAuditToolkit</AssemblyName>
+    <RootNamespace>HardwareAuditToolkit.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <Version>0.1.0</Version>
+    <Product>Hardware Audit Toolkit</Product>
+    <Description>Portable sysadmin hardware audit toolkit — keyboard, mouse, monitor, system info, and CPU stress testing.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\HardwareAuditToolkit.Core.csproj" />
+    <ProjectReference Include="..\Infrastructure\HardwareAuditToolkit.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="System.Management" Version="10.0.2" />
+  </ItemGroup>
+
+  <!--
+    Single-file publishing should end with precisely one artifact. Referenced
+    projects still emit portable PDBs into the publish folder; drop them so the
+    "single self-contained .exe" story holds (§9.1/Confirmed decision 1).
+  -->
+  <Target Name="RemovePdbFromPublishDirectory" AfterTargets="Publish">
+    <ItemGroup>
+      <_UnwantedPublishPdb Include="$(PublishDir)**\*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_UnwantedPublishPdb)" TreatErrorsAsWarnings="true" />
+  </Target>
+
+</Project>

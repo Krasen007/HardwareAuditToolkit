@@ -1,0 +1,16 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio / VS Code
+.vs/
+*.user
+*.suo
+.vscode/
+
+# Publish outputs
+Src/App/bin/publish/
+
+# Test results
+TestResults/
+*.trx
