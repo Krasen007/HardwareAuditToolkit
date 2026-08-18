@@ -64,8 +64,20 @@ Outputs land in `Src\App\bin\publish\`.
    the independent hook); raw-input registration torn down on `Cancel()` **and** on
    view-model disposal so navigation doesn't leak capture. 24 tests pass
    (`TestOrchestratorTests` + `Phase2ModuleTests` + `KeyboardModuleTests`).
-- **Phase 4 (mouse test) — next:** see the architecture doc §10 and the existing
-   Phase 3 patterns (raw input + vector layout + exclusive module) for where to hook it in.
+- **Phase 4 (mouse test) — done:** `RawMouseInput` (Infrastructure, native
+   message-only window, scan-agnostic button/wheel/delta stream) + `MouseTestModule`
+   (exclusive, one raw-input registration torn down on `Cancel()` **and** view-model
+   disposal so navigation doesn't leak capture); `MouseTestModuleViewModel`
+   + `MouseTestView` via `NavigationService` + `MainWindow` data templates. Click /
+   scroll / drag-hold are logged with per-button counters; a drag is distinctly
+   flagged from a click ("released mid-drag — drop detected"), and a mouse unplug
+   mid-hold is recorded as an incomplete drag/drop finding (§9.5, no freeze). A
+   duck-outline tracing sub-screen (held-button trace scored by path coverage)
+   launches from within the module like the keyboard WPM sub-screen. 30 tests pass
+   (orchestrator + `KeyboardModuleTests` + `Phase2ModuleTests` + `MouseModuleTests`).
+- **Phase 5 (monitor test) — next:** see the architecture doc §10 and the existing
+   Phase 3/4 patterns (raw input + vector layout + exclusive module + sub-screen)
+   for where to hook it in.
 
 ---
 

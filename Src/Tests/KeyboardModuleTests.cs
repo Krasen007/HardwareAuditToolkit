@@ -145,9 +145,11 @@ public class KeyboardModuleTests
 
         Assert.Single(services, d => d.ServiceType == typeof(KeyboardTestModuleViewModel)
                                      && d.Lifetime == ServiceLifetime.Transient);
-        Assert.Single(services, d => d.ServiceType == typeof(IRawKeyboardInput));
-        // Three exclusive/non-exclusive modules now register as ITestModule.
-        Assert.Equal(3, services.Count(d => d.ServiceType == typeof(ITestModule)));
+        Assert.Single(services, d => d.ServiceType == typeof(IRawMouseInput));
+        Assert.Single(services, d => d.ServiceType == typeof(MouseTestModuleViewModel)
+                                     && d.Lifetime == ServiceLifetime.Transient);
+        // keyboard, mouse, system, stress now register as ITestModule.
+        Assert.Equal(4, services.Count(d => d.ServiceType == typeof(ITestModule)));
     }
 
     private static ModuleResult GetSessionResult(TestOrchestrator orchestrator)

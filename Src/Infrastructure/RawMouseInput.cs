@@ -4,12 +4,11 @@ namespace HardwareAuditToolkit.Infrastructure;
 
 /// <summary>
 /// <para>
-/// Phase 3 — raw keyboard capture (architecture §10 Phase 3). Registers raw
-/// input for the keyboard usage page (0x01 / 0x06) with <c>RIDEV_INPUTSINK</c>
-/// so every physical key arrives regardless of focus, parses each
+/// Phase 4 — raw mouse capture (architecture §10 Phase 4). Registers raw input
+/// for the mouse usage page (0x01 / 0x02) with <c>RIDEV_INPUTSINK</c> so every
+/// physical button, wheel, and movement arrives regardless of focus, parses each
 /// <c>WM_INPUT</c> via <see cref="GetRawInputData"/>, and raises
-/// <see cref="IRawKeyboardInput.KeyReceived"/> with a scan-code-first
-/// <see cref="RawKeySample"/>.
+/// <see cref="IRawMouseInput.MouseReceived"/> with a <see cref="RawMouseSample"/>.
 /// </para>
 /// <para>
 /// The capture window is a native message-only window (parent <c>HWND_MESSAGE</c>)
@@ -20,32 +19,38 @@ namespace HardwareAuditToolkit.Infrastructure;
 /// the callback only parses one structure and hands the sample to subscribers; it
 /// never blocks the thread (§9.2).
 /// </para>
-/// <para>
-/// The composite scan-code id is <c>0xE000 | makeCode</c> for keys carrying the
-/// E0 prefix and the raw make code otherwise, giving a stable per-physical-key
-/// identifier that the vector layout maps to an on-screen key.
-/// </para>
 /// </summary>
-public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
+public sealed class RawMouseInput : IRawMouseInput, IDisposable
 {
     private const int WmInput = 0x00FF;
     private const int RidInput = 0x10000003;
-    private const int RimTypekeyboard = 1;
+    private const int RimTypemouse = 2;
     private const int RidevInputSink = 0x100;
     private const int RidevRemove = 0x00000001;
-    private const int RiKeyE0 = 0x02;   // E0 prefix in RAWKEYBOARD.Flags
-    private const int RiKeyBreak = 0x01; // key-up (break) flag
 
     private const int HwndMessage = -3;
 
+    // RAWMOUSE usButtonFlags values.
+    private const ushort RiMouseLeftButtonDown = 0x0001;
+    private const ushort RiMouseLeftButtonUp = 0x0002;
+    private const ushort RiMouseRightButtonDown = 0x0004;
+    private const ushort RiMouseRightButtonUp = 0x0008;
+    private const ushort RiMouseMiddleButtonDown = 0x0010;
+    private const ushort RiMouseMiddleButtonUp = 0x0020;
+    private const ushort RiMouseButton4Down = 0x0040;
+    private const ushort RiMouseButton4Up = 0x0080;
+    private const ushort RiMouseButton5Down = 0x0100;
+    private const ushort RiMouseButton5Up = 0x0200;
+    private const ushort RiMouseWheel = 0x0400;
+
     private readonly object _gate = new();
     private IntPtr _hwnd;
-    private readonly string _className = "HATKbdCapture_" + Guid.NewGuid().ToString("N");
+    private string _className = "HATMouseCapture_" + Guid.NewGuid().ToString("N");
     private UIntPtr _classAtom;
     private WndProc? _wndProc; // kept rooted so the native thunk is never collected
     private bool _disposed;
 
-    public event EventHandler<RawKeySample>? KeyReceived;
+    public event EventHandler<RawMouseSample>? MouseReceived;
 
     public void Start()
     {
@@ -86,7 +91,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
             }
 
             RegisterRawInputDevices(
-                new[] { new RawInputDevice { UsagePage = 0x01, Usage = 0x06, Flags = RidevInputSink, Target = _hwnd } },
+                new[] { new RawInputDevice { UsagePage = 0x01, Usage = 0x02, Flags = RidevInputSink, Target = _hwnd } },
                 1,
                 Marshal.SizeOf<RawInputDevice>());
         }
@@ -101,10 +106,8 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
                 return;
             }
 
-            // Unregister before destroying the window so no further WM_INPUT
-            // arrives for our handle.
             RegisterRawInputDevices(
-                new[] { new RawInputDevice { UsagePage = 0x01, Usage = 0x06, Flags = RidevRemove, Target = IntPtr.Zero } },
+                new[] { new RawInputDevice { UsagePage = 0x01, Usage = 0x02, Flags = RidevRemove, Target = IntPtr.Zero } },
                 1,
                 Marshal.SizeOf<RawInputDevice>());
 
@@ -150,25 +153,41 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
             }
 
             var header = Marshal.PtrToStructure<Rawinputheader>(buffer);
-            if (header.dwType != RimTypekeyboard)
+            if (header.dwType != RimTypemouse)
             {
                 return;
             }
 
-            var kb = Marshal.PtrToStructure<Rawkeyboard>(IntPtr.Add(buffer, Marshal.SizeOf<Rawinputheader>()));
+            var mouse = Marshal.PtrToStructure<Rawmouse>(IntPtr.Add(buffer, Marshal.SizeOf<Rawinputheader>()));
 
-            bool extended = (kb.Flags & RiKeyE0) != 0;
-            int composite = extended ? (0xE000 | kb.MakeCode) : kb.MakeCode;
+            var changes = MouseButtonChanges.None;
+            if ((mouse.usButtonFlags & RiMouseLeftButtonDown) != 0) changes |= MouseButtonChanges.LeftDown;
+            if ((mouse.usButtonFlags & RiMouseLeftButtonUp) != 0) changes |= MouseButtonChanges.LeftUp;
+            if ((mouse.usButtonFlags & RiMouseRightButtonDown) != 0) changes |= MouseButtonChanges.RightDown;
+            if ((mouse.usButtonFlags & RiMouseRightButtonUp) != 0) changes |= MouseButtonChanges.RightUp;
+            if ((mouse.usButtonFlags & RiMouseMiddleButtonDown) != 0) changes |= MouseButtonChanges.MiddleDown;
+            if ((mouse.usButtonFlags & RiMouseMiddleButtonUp) != 0) changes |= MouseButtonChanges.MiddleUp;
+            if ((mouse.usButtonFlags & RiMouseButton4Down) != 0) changes |= MouseButtonChanges.X1Down;
+            if ((mouse.usButtonFlags & RiMouseButton4Up) != 0) changes |= MouseButtonChanges.X1Up;
+            if ((mouse.usButtonFlags & RiMouseButton5Down) != 0) changes |= MouseButtonChanges.X2Down;
+            if ((mouse.usButtonFlags & RiMouseButton5Up) != 0) changes |= MouseButtonChanges.X2Up;
 
-            var sample = new RawKeySample
+            int wheel = 0;
+            if ((mouse.usButtonFlags & RiMouseWheel) != 0)
             {
-                ScanCodeId = composite,
-                VirtualKey = kb.VKey,
-                IsExtended = extended,
-                IsKeyDown = (kb.Flags & RiKeyBreak) == 0,
+                changes |= MouseButtonChanges.Wheel;
+                wheel = (short)mouse.usButtonData;
+            }
+
+            var sample = new RawMouseSample
+            {
+                Buttons = changes,
+                WheelDelta = wheel,
+                DeltaX = mouse.lLastX,
+                DeltaY = mouse.lLastY,
             };
 
-            KeyReceived?.Invoke(this, sample);
+            MouseReceived?.Invoke(this, sample);
         }
         finally
         {
@@ -209,15 +228,16 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
         public IntPtr wParam;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Rawkeyboard
+    [StructLayout(LayoutKind.Explicit)]
+    private struct Rawmouse
     {
-        public ushort MakeCode;
-        public ushort Flags;
-        public ushort Reserved;
-        public ushort VKey;
-        public uint Message;
-        public ulong ExtraInformation;
+        [FieldOffset(0)] public ushort usFlags;
+        [FieldOffset(2)] public ushort usButtonFlags;
+        [FieldOffset(4)] public ushort usButtonData;
+        [FieldOffset(8)] public uint ulRawButtons;
+        [FieldOffset(12)] public int lLastX;
+        [FieldOffset(16)] public int lLastY;
+        [FieldOffset(20)] public uint ulExtraInformation;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
