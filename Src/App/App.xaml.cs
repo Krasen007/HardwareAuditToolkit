@@ -1,17 +1,26 @@
+using System.ComponentModel;
 using System.Windows;
+using CommunityToolkit.Mvvm.Messaging;
+using HardwareAuditToolkit.App.Messages;
+using HardwareAuditToolkit.App.Services;
+using HardwareAuditToolkit.App.ViewModels;
+using HardwareAuditToolkit.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HardwareAuditToolkit.App;
 
 /// <summary>
 /// Application bootstrap: single-instance enforcement (§9.3), the DI shell,
-/// and the main window. Nothing hardware-related starts until the instance
-/// check has passed.
+/// the shell/exit wiring for Phase 1 (§6), and the device-change listener (§9.5).
+/// Nothing hardware-related starts until the instance check has passed.
 /// </summary>
 public partial class App : Application
 {
     private ServiceProvider? _services;
     private SingleInstanceEnforcer? _singleInstance;
+    private ExitHotkeyService? _exitHotkey;
+    private DeviceChangeService? _deviceChange;
+    private bool _exitInitiated;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -40,15 +49,99 @@ public partial class App : Application
         ConfigureServices(services);
         _services = services.BuildServiceProvider();
 
+        // Build the shell graph. Shell ↔ Navigation is cyclic, so wire manually.
+        var shell = _services.GetRequiredService<ShellViewModel>();
+        var navigation = _services.GetRequiredService<INavigationService>();
+        var deviceChange = _services.GetRequiredService<DeviceChangeService>();
+        shell.Navigation = navigation;
+        shell.DeviceChange = deviceChange;
+        shell.ShowDashboard();
+
         var mainWindow = _services.GetRequiredService<MainWindow>();
         MainWindow = mainWindow;
+        mainWindow.DataContext = shell;
+        mainWindow.Closing += OnMainWindowClosing;
         mainWindow.Show();
+
+        // §6 — every exit path (Ctrl+E, Exit button, native close) routes through
+        // the orchestrator's exit flow. Subscribe on the app so the handler runs
+        // regardless of which screen is active.
+        WeakReferenceMessenger.Default.Register<ExitRequestedMessage>(this, (_, _) =>
+            Dispatcher.BeginInvoke(HandleExitRequested));
+
+        // §9.2 — Ctrl+E hook on its own dedicated thread.
+        _exitHotkey = _services.GetRequiredService<ExitHotkeyService>();
+        _exitHotkey.Start();
+
+        // §9.5 — live device-change listener.
+        _deviceChange = deviceChange;
+        _deviceChange.Start();
+    }
+
+    /// <summary>
+    /// Routed through the orchestrator so any running module is cancelled cleanly
+    /// before the app closes (§4, §6).
+    /// </summary>
+    private void HandleExitRequested()
+    {
+        if (_exitInitiated)
+        {
+            return;
+        }
+
+        _exitInitiated = true;
+
+        if (_services is null)
+        {
+            Shutdown();
+            return;
+        }
+
+        var orchestrator = _services.GetRequiredService<TestOrchestrator>();
+        orchestrator.CancelAll();
+
+        var session = _services.GetRequiredService<AuditSession>();
+        if (session.CompletedAt is null)
+        {
+            session.CompletedAt = DateTime.UtcNow;
+        }
+
+        Shutdown();
+    }
+
+    /// <summary>
+    /// Native window close (X) routes through the same exit flow as Ctrl+E and
+    /// the Exit button (§6). The guard prevents reentrancy once shutdown begins.
+    /// </summary>
+    private void OnMainWindowClosing(object? sender, CancelEventArgs e)
+    {
+        if (_exitInitiated)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        WeakReferenceMessenger.Default.Send(new ExitRequestedMessage());
     }
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Phase 1 registers the TestOrchestrator, the module set, and the
-        // messenger-based event bus here.
+        // Phase 1 shell + services.
+        services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<DeviceChangeService>();
+        services.AddSingleton<ExitHotkeyService>();
+        services.AddSingleton<INavigationService, NavigationService>();
+
+        // Core orchestrator owns the (currently empty) module set and the session.
+        var session = new AuditSession
+        {
+            SessionId = Guid.NewGuid().ToString("N"),
+            Hostname = Environment.MachineName,
+            StartedAt = DateTime.UtcNow,
+        };
+        services.AddSingleton(session);
+        services.AddSingleton<TestOrchestrator>();
+
         services.AddSingleton<MainWindow>();
     }
 

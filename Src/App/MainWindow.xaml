@@ -1,14 +1,51 @@
 <Window x:Class="HardwareAuditToolkit.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:vm="clr-namespace:HardwareAuditToolkit.App.ViewModels"
+        xmlns:views="clr-namespace:HardwareAuditToolkit.App.Views"
+        mc:Ignorable="d"
         Title="Hardware Audit Toolkit"
-        Height="600" Width="900"
+        Height="640" Width="920"
         WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <!-- ViewModel-first navigation: the content region renders the current screen. -->
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ModulePlaceholderViewModel}">
+            <views:ModulePlaceholderView />
+        </DataTemplate>
+    </Window.Resources>
+
     <Grid>
-        <TextBlock Text="Hardware Audit Toolkit — Phase 0 scaffold"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   FontSize="22"
-                   Foreground="#FF888888" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Persistent header: brand + always-available mouse-only exit path (§6). -->
+        <Border Grid.Row="0" Background="#2D2D30" Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Hardware Audit Toolkit"
+                           Foreground="White" FontSize="16" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="Exit Test (Ctrl+E)"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Padding="14,6" FontSize="13" FontWeight="SemiBold"
+                        Foreground="White" Background="#C0392B"
+                        BorderBrush="#922B21" BorderThickness="1"
+                        Cursor="Hand"
+                        Command="{Binding ExitCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Current screen -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentScreen}" />
     </Grid>
 </Window>
