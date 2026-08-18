@@ -23,6 +23,7 @@ public sealed class NavigationService : INavigationService
         {
             "system" => _services.GetRequiredService<SystemInfoModuleViewModel>(),
             "stress" => _services.GetRequiredService<CpuStressModuleViewModel>(),
+            "keyboard" => _services.GetRequiredService<KeyboardTestModuleViewModel>(),
             _ => ActivatorUtilities.CreateInstance<ModulePlaceholderViewModel>(_services, moduleId, this),
         };
 

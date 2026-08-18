@@ -150,6 +150,11 @@ public partial class App : Application
         services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<SystemInfoModule>());
         services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<CpuStressModule>());
 
+        // Phase 3 — keyboard test: raw input capture + the exclusive module.
+        services.AddSingleton<IRawKeyboardInput, RawKeyboardInput>();
+        services.AddSingleton<KeyboardTestModule>();
+        services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<KeyboardTestModule>());
+
         // Phase 2 — module screen view models. NavigationService resolves these per
         // navigation, and each instance registers event-bus subscriptions in its
         // constructor and is disposed when its screen is left (NavigationService
@@ -157,6 +162,7 @@ public partial class App : Application
         // stay unsubscribed after the first disposal on subsequent visits.
         services.AddTransient<SystemInfoModuleViewModel>();
         services.AddTransient<CpuStressModuleViewModel>();
+        services.AddTransient<KeyboardTestModuleViewModel>();
 
         // Core orchestrator owns the module set and the session.
         var session = new AuditSession

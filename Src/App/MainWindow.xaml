@@ -23,6 +23,9 @@
         <DataTemplate DataType="{x:Type vm:CpuStressModuleViewModel}">
             <views:CpuStressView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:KeyboardTestModuleViewModel}">
+            <views:KeyboardTestView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

@@ -52,10 +52,20 @@ Outputs land in `Src\App\bin\publish\`.
   `LibreHardwareMonitorSensorProvider` (on the event bus via `SensorReadingsMessage`),
   `SystemInfoModule` (non-exclusive) and the §8 CPU stress module (exclusive, one
   `BelowNormal` worker per core, 5-min cap, manual Stop, live telemetry), plus
-  `SystemInfoView`/`CpuStressView` wired through `NavigationService` + `MainWindow`
-  data templates. 16 tests pass (orchestrator + new `Phase2ModuleTests`).
-- **Phase 3 (keyboard test) — next:** see the **Phase 3 handoff** section below for
-  what to build and exactly where to hook it in.
+   `SystemInfoView`/`CpuStressView` wired through `NavigationService` + `MainWindow`
+   data templates. 16 tests pass (orchestrator + new `Phase2ModuleTests`).
+- **Phase 3 (keyboard test) — done:** `RawKeyboardInput` (Infrastructure, native
+   message-only window, scan-code based) + ANSI `KeyboardLayout`; exclusive
+   `KeyboardTestModule` (per-key untested→pressed→confirmed, operator confirmation
+   is the recorded status); `KeyboardTestView`/`KeyboardTestModuleViewModel` driven
+   through the orchestrator and the event bus (`KeyEventMessage`/`KeyboardTestStatusMessage`);
+   WPM/accuracy sub-screen launched from within the module (not a separate
+   exclusive module); `Esc`-is-just-data (no exit handler, `Ctrl+E` still exits via
+   the independent hook); raw-input registration torn down on `Cancel()` **and** on
+   view-model disposal so navigation doesn't leak capture. 24 tests pass
+   (`TestOrchestratorTests` + `Phase2ModuleTests` + `KeyboardModuleTests`).
+- **Phase 4 (mouse test) — next:** see the architecture doc §10 and the existing
+   Phase 3 patterns (raw input + vector layout + exclusive module) for where to hook it in.
 
 ---
 
