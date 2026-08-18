@@ -1,0 +1,1 @@
+cd C:\Users\k.ivanov\repos\all-hardware-tests\src\app && dotnet run

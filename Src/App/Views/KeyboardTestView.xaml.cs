@@ -1,11 +1,12 @@
 using System.Windows.Controls;
 
-namespace HardwareAuditToolkit.App.Views;
-
-public partial class KeyboardTestView : UserControl
+namespace HardwareAuditToolkit.App.Views
 {
-    public KeyboardTestView()
+    public partial class KeyboardTestView : UserControl
     {
-        InitializeComponent();
+        public KeyboardTestView()
+        {
+            InitializeComponent();
+        }
     }
 }
