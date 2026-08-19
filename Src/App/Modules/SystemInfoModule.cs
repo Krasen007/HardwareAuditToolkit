@@ -22,6 +22,7 @@ public sealed class SystemInfoModule : ITestModule
     private readonly object _gate = new();
     private ModulePhase _phase = ModulePhase.NotStarted;
     private Action<TestStatus>? _onComplete;
+    private int _runGeneration;
 
     public SystemInfoModule(SystemInfoProvider provider)
     {
@@ -68,22 +69,50 @@ public sealed class SystemInfoModule : ITestModule
             Artifacts.Clear();
 
             // Delegate to a worker thread so Start returns promptly (ITestModule
-            // contract) and the UI thread is never blocked by WMI queries.
+            // contract) and the UI thread is never blocked by WMI queries. The
+            // generation guard ensures a worker from a cancelled/restarted run
+            // never mutates state or fires the completion callback of a newer
+            // run (ITestModule contract: onComplete fires exactly once per run).
+            int generation = ++_runGeneration;
             Task.Run(() =>
             {
                 try
                 {
                     var snapshot = _provider.GetSnapshot();
-                    CurrentPhase = ModulePhase.Running;
-                    Populate(snapshot);
-                    CurrentPhase = ModulePhase.Complete;
-                    _onComplete?.Invoke(TestStatus.Passed);
+                    Action<TestStatus>? cb;
+                    lock (_gate)
+                    {
+                        if (generation != _runGeneration)
+                        {
+                            return; // superseded by Cancel or a newer Start
+                        }
+
+                        CurrentPhase = ModulePhase.Running;
+                        Populate(snapshot);
+                        CurrentPhase = ModulePhase.Complete;
+                        cb = _onComplete;
+                        _onComplete = null;
+                    }
+
+                    cb?.Invoke(TestStatus.Passed);
                 }
                 catch (Exception ex)
                 {
-                    Findings.Add($"System info collection failed: {ex.Message}");
-                    CurrentPhase = ModulePhase.Complete;
-                    _onComplete?.Invoke(TestStatus.Warning);
+                    Action<TestStatus>? cb;
+                    lock (_gate)
+                    {
+                        if (generation != _runGeneration)
+                        {
+                            return;
+                        }
+
+                        Findings.Add($"System info collection failed: {ex.Message}");
+                        CurrentPhase = ModulePhase.Complete;
+                        cb = _onComplete;
+                        _onComplete = null;
+                    }
+
+                    cb?.Invoke(TestStatus.Warning);
                 }
             });
         }
@@ -91,6 +120,7 @@ public sealed class SystemInfoModule : ITestModule
 
     public void Cancel()
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -99,8 +129,14 @@ public sealed class SystemInfoModule : ITestModule
             }
 
             CurrentPhase = ModulePhase.Cancelled;
-            _onComplete?.Invoke(TestStatus.Cancelled);
+            _runGeneration++; // invalidate any in-flight worker from this run
+            cb = _onComplete;
+            _onComplete = null;
         }
+
+        // Invoke the completion callback outside the lock (it re-enters the
+        // orchestrator, which may hold its own lock waiting on this gate).
+        cb?.Invoke(TestStatus.Cancelled);
     }
 
     private void Populate(SystemInfoSnapshot s)

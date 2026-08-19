@@ -106,6 +106,7 @@ public sealed class KeyboardTestModule : ITestModule
 
     public void Cancel()
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -113,8 +114,10 @@ public sealed class KeyboardTestModule : ITestModule
                 return;
             }
 
-            StopInternal(TestStatus.Cancelled, "Keyboard test cancelled.");
+            cb = StopInternal(TestStatus.Cancelled, "Keyboard test cancelled.");
         }
+
+        cb?.Invoke(TestStatus.Cancelled);
     }
 
     /// <summary>
@@ -124,6 +127,9 @@ public sealed class KeyboardTestModule : ITestModule
     /// </summary>
     public void Confirm()
     {
+        Action<TestStatus>? cb;
+        TestStatus status;
+        string detail;
         lock (_gate)
         {
             if (!IsRunning)
@@ -140,20 +146,27 @@ public sealed class KeyboardTestModule : ITestModule
             {
                 PromoteToConfirmed();
                 Findings.Add("Operator confirmed: every expected key registered at least once.");
-                StopInternal(TestStatus.Passed, "Passed — all expected keys registered and operator confirmed.");
+                status = TestStatus.Passed;
+                detail = "Passed — all expected keys registered and operator confirmed.";
             }
             else
             {
                 PromoteToConfirmed();
                 Findings.Add($"Operator confirmed, but {missing.Count} key(s) were never pressed: {string.Join(", ", missing)}.");
-                StopInternal(TestStatus.Warning, "Warning — some keys were not pressed before confirmation.");
+                status = TestStatus.Warning;
+                detail = "Warning — some keys were not pressed before confirmation.";
             }
+
+            cb = StopInternal(status, detail);
         }
+
+        cb?.Invoke(status);
     }
 
     /// <summary>Operator flags a defective key; resolves <see cref="TestStatus.Failed"/>.</summary>
     public void FlagDefect(string? note = null)
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -162,8 +175,10 @@ public sealed class KeyboardTestModule : ITestModule
             }
 
             Findings.Add(note ?? "Operator flagged a defective key.");
-            StopInternal(TestStatus.Failed, "Failed — operator flagged a defect.");
+            cb = StopInternal(TestStatus.Failed, "Failed — operator flagged a defect.");
         }
+
+        cb?.Invoke(TestStatus.Failed);
     }
 
     /// <summary>Resets per-key coverage. Only valid before starting a run.</summary>
@@ -265,7 +280,13 @@ public sealed class KeyboardTestModule : ITestModule
         }
     }
 
-    private void StopInternal(TestStatus status, string detail)
+    /// <summary>
+    /// Tears down raw capture, records the result, and publishes the status.
+    /// Caller must hold <see cref="_gate"/>. Returns the completion callback;
+    /// the caller invokes it AFTER releasing the lock (it re-enters the
+    /// orchestrator, which may hold its own lock waiting on this gate).
+    /// </summary>
+    private Action<TestStatus>? StopInternal(TestStatus status, string detail)
     {
         if (_handler is not null)
         {
@@ -293,7 +314,7 @@ public sealed class KeyboardTestModule : ITestModule
 
         var cb = _onComplete;
         _onComplete = null;
-        cb?.Invoke(status);
+        return cb;
     }
 
     private void ResetStates()

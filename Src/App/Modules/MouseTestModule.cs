@@ -126,6 +126,7 @@ public sealed class MouseTestModule : ITestModule
 
     public void Cancel()
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -133,8 +134,10 @@ public sealed class MouseTestModule : ITestModule
                 return;
             }
 
-            StopInternal(TestStatus.Cancelled, "Mouse test cancelled.");
+            cb = StopInternal(TestStatus.Cancelled, "Mouse test cancelled.");
         }
+
+        cb?.Invoke(TestStatus.Cancelled);
     }
 
     /// <summary>
@@ -142,6 +145,7 @@ public sealed class MouseTestModule : ITestModule
     /// </summary>
     public void Confirm()
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -157,13 +161,16 @@ public sealed class MouseTestModule : ITestModule
                 Findings.Add("Operator confirmed without running the tracing sub-screen.");
             }
 
-            StopInternal(TestStatus.Passed, "Passed — operator confirmed all mouse functions work.");
+            cb = StopInternal(TestStatus.Passed, "Passed — operator confirmed all mouse functions work.");
         }
+
+        cb?.Invoke(TestStatus.Passed);
     }
 
     /// <summary>Operator flags a defective button/sensor; resolves <see cref="TestStatus.Failed"/>.</summary>
     public void FlagDefect(string? note = null)
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -172,8 +179,10 @@ public sealed class MouseTestModule : ITestModule
             }
 
             Findings.Add(note ?? "Operator flagged a defective mouse function.");
-            StopInternal(TestStatus.Failed, "Failed — operator flagged a defect.");
+            cb = StopInternal(TestStatus.Failed, "Failed — operator flagged a defect.");
         }
+
+        cb?.Invoke(TestStatus.Failed);
     }
 
     /// <summary>Resets click/scroll/drag counters. Only valid before starting a run.</summary>
@@ -372,7 +381,13 @@ public sealed class MouseTestModule : ITestModule
         });
     }
 
-    private void StopInternal(TestStatus status, string detail)
+    /// <summary>
+    /// Tears down raw capture, records the result, and publishes the status.
+    /// Caller must hold <see cref="_gate"/>. Returns the completion callback;
+    /// the caller invokes it AFTER releasing the lock (it re-enters the
+    /// orchestrator, which may hold its own lock waiting on this gate).
+    /// </summary>
+    private Action<TestStatus>? StopInternal(TestStatus status, string detail)
     {
         if (_handler is not null)
         {
@@ -406,7 +421,7 @@ public sealed class MouseTestModule : ITestModule
 
         var cb = _onComplete;
         _onComplete = null;
-        cb?.Invoke(status);
+        return cb;
     }
 
     private void ResetDragState()

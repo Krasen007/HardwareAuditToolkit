@@ -292,7 +292,17 @@ public sealed class TestOrchestrator : IDisposable
             }
 
             entry.Module.Cancel();
-            CompleteCancelledEntry(entry, $"Module exceeded its maximum duration of {entry.Module.Metadata.MaxDuration} and was force-cancelled.");
+
+            // A module whose Cancel() completes synchronously (keyboard/mouse/
+            // monitor — they invoke the completion callback inline) has already
+            // been recorded by OnModuleCompleted above. Only record the timeout
+            // here when the module did NOT complete inline, mirroring CancelModule
+            // and CancelAll; otherwise the timeout reason would be double-appended
+            // and measurements copied twice into the session.
+            if (_running.TryGetValue(moduleId, out var stillRunning) && ReferenceEquals(stillRunning.Module, entry.Module))
+            {
+                CompleteCancelledEntry(entry, $"Module exceeded its maximum duration of {entry.Module.Metadata.MaxDuration} and was force-cancelled.");
+            }
         }
     }
 

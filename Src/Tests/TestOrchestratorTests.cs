@@ -147,6 +147,35 @@ public class TestOrchestratorTests
     }
 
     [Fact]
+    public void Timeout_ModuleCompletingInlineOnCancel_RecordsSingleResult()
+    {
+        // Real modules (keyboard/mouse/monitor) invoke the completion callback
+        // synchronously from Cancel(). When such a module times out, the timeout
+        // must not double-record the result (duplicate measurements/findings +
+        // a spurious "maximum duration" finding appended to a run the module
+        // already closed itself).
+        var session = new AuditSession();
+        var module = new FakeModule("keyboard", isExclusive: true, maxDuration: TimeSpan.FromMilliseconds(150))
+        {
+            CompleteOnCancel = true,
+        };
+        module.Measurements.Add(new ModuleMeasurement { Timestamp = DateTime.UtcNow, Label = "key", Value = "A" });
+        using var orchestrator = new TestOrchestrator(session, new[] { module });
+
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+
+        bool completed = SpinWait.SpinUntil(
+            () => session.Modules.Single().CompletedAt.HasValue,
+            TimeSpan.FromSeconds(10));
+
+        Assert.True(completed, "module should have been force-cancelled by its timeout");
+        var result = session.Modules.Single();
+        Assert.Equal(TestStatus.Cancelled, result.Status);
+        Assert.Single(result.Measurements); // copied exactly once, not twice
+        Assert.DoesNotContain(result.Findings, f => f.Contains("maximum duration"));
+    }
+
+    [Fact]
     public void StartModule_StartThrows_ReturnsFalseAndRecordsFailed()
     {
         var session = new AuditSession();
@@ -197,10 +226,15 @@ public class TestOrchestratorTests
         public bool PreconditionsMet { get; set; } = true;
         public bool ThrowOnStart { get; set; }
 
+        /// <summary>When true, <see cref="Cancel"/> completes synchronously through the
+        /// completion callback, mirroring the real keyboard/mouse/monitor modules.</summary>
+        public bool CompleteOnCancel { get; set; }
+
         public bool CheckPreconditions() => PreconditionsMet;
 
         public void Start(Action<TestStatus> onComplete)
         {
+            _onComplete = onComplete;
             if (ThrowOnStart)
             {
                 throw new InvalidOperationException("simulated start failure");
@@ -219,8 +253,16 @@ public class TestOrchestratorTests
             if (IsRunning)
             {
                 CurrentPhase = ModulePhase.Cancelled;
+                if (CompleteOnCancel)
+                {
+                    var cb = _onComplete;
+                    _onComplete = null;
+                    cb?.Invoke(TestStatus.Cancelled);
+                }
             }
         }
+
+        private Action<TestStatus>? _onComplete;
 
         private sealed class FakeMetadata : IModuleMetadata
         {

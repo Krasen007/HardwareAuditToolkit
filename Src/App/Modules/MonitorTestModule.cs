@@ -243,7 +243,18 @@ public sealed class MonitorTestModule : ITestModule
                     }
                 }
 
-                CurrentPhase = ModulePhase.Running;
+                lock (_gate)
+                {
+                    // The operator may have confirmed or cancelled while we were
+                    // probing; don't flip a terminal phase back to Running.
+                    if (CurrentPhase != ModulePhase.Setup)
+                    {
+                        return;
+                    }
+
+                    CurrentPhase = ModulePhase.Running;
+                }
+
                 WeakReferenceMessenger.Default.Send(new MonitorTestStatusMessage
                 {
                     Status = TestStatus.Running,
@@ -255,6 +266,7 @@ public sealed class MonitorTestModule : ITestModule
 
     public void Cancel()
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -262,13 +274,16 @@ public sealed class MonitorTestModule : ITestModule
                 return;
             }
 
-            StopInternal(TestStatus.Cancelled, "Monitor test cancelled.");
+            cb = StopInternal(TestStatus.Cancelled, "Monitor test cancelled.");
         }
+
+        cb?.Invoke(TestStatus.Cancelled);
     }
 
     /// <summary>Operator confirms the patterns render correctly → <see cref="TestStatus.Passed"/>.</summary>
     public void Confirm()
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -277,13 +292,16 @@ public sealed class MonitorTestModule : ITestModule
             }
 
             Findings.Add("Operator confirmed patterns render correctly on the selected display.");
-            StopInternal(TestStatus.Passed, "Passed — operator confirmed monitor patterns look correct.");
+            cb = StopInternal(TestStatus.Passed, "Passed — operator confirmed monitor patterns look correct.");
         }
+
+        cb?.Invoke(TestStatus.Passed);
     }
 
     /// <summary>Operator flags a defect (dead pixel, uniformity, color) → <see cref="TestStatus.Failed"/>.</summary>
     public void FlagDefect(string? note = null)
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -292,8 +310,10 @@ public sealed class MonitorTestModule : ITestModule
             }
 
             Findings.Add(note ?? "Operator flagged a monitor defect (dead pixel, uniformity, or color).");
-            StopInternal(TestStatus.Failed, "Failed — operator flagged a monitor defect.");
+            cb = StopInternal(TestStatus.Failed, "Failed — operator flagged a monitor defect.");
         }
+
+        cb?.Invoke(TestStatus.Failed);
     }
 
     /// <summary>Re-runs the DDC/CI probe. Only valid before starting a run.</summary>
@@ -310,7 +330,12 @@ public sealed class MonitorTestModule : ITestModule
         }
     }
 
-    private void StopInternal(TestStatus status, string detail)
+    /// <summary>
+    /// Records the result and publishes the status message. Caller must hold
+    /// <see cref="_gate"/>. Returns the completion callback; the caller invokes
+    /// it AFTER releasing the lock (the callback re-enters the orchestrator).
+    /// </summary>
+    private Action<TestStatus>? StopInternal(TestStatus status, string detail)
     {
         CurrentPhase = status == TestStatus.Cancelled ? ModulePhase.Cancelled : ModulePhase.Complete;
         OperatorActions.Add(detail);
@@ -323,7 +348,7 @@ public sealed class MonitorTestModule : ITestModule
 
         var cb = _onComplete;
         _onComplete = null;
-        cb?.Invoke(status);
+        return cb;
     }
 
     private sealed class MonitorMetadata : IModuleMetadata

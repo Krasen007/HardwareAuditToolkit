@@ -123,16 +123,20 @@ public sealed class CpuStressModule : ITestModule
 
             Findings.Add($"Burn-in started on {cores} logical cores at BelowNormal priority; target duration {_duration:g}.");
 
-            // Live telemetry, then self-stop at the duration cap.
+            // Live telemetry, then self-stop at the duration cap. Capture the CTS
+            // so the completion continuation can prove it belongs to THIS run: a
+            // stale continuation from a cancelled earlier run must never stop a
+            // run that started after the cancel (restart race).
+            var cts = _cts;
             _telemetryTimer = new Timer(_ => PublishTelemetry(running: true), null, 0, 1000);
-            Task.Delay(_duration, _cts.Token)
-                .ContinueWith(_ => CompleteNaturally(), TaskScheduler.Default);
+            Task.Delay(_duration, cts.Token)
+                .ContinueWith(_ => CompleteNaturally(cts), TaskScheduler.Default);
         }
     }
 
     public void Cancel()
     {
-        TestStatus? final = null;
+        Action<TestStatus>? cb;
         lock (_gate)
         {
             if (!IsRunning)
@@ -140,29 +144,41 @@ public sealed class CpuStressModule : ITestModule
                 return;
             }
 
-            final = TestStatus.Cancelled;
-            StopWorkers(final.Value);
+            cb = StopWorkers(TestStatus.Cancelled);
         }
+
+        // Invoke the completion callback outside the lock: it re-enters the
+        // orchestrator, which may concurrently hold its lock while calling
+        // Cancel() on this module (AB-BA deadlock otherwise).
+        cb?.Invoke(TestStatus.Cancelled);
     }
 
-    private void CompleteNaturally()
+    private void CompleteNaturally(CancellationTokenSource cts)
     {
+        Action<TestStatus>? cb;
         lock (_gate)
         {
-            if (!IsRunning)
+            if (!IsRunning || !ReferenceEquals(cts, _cts))
             {
+                // Superseded (restart raced with a cancelled run's continuation)
+                // or already stopped — do not stop the current run.
                 return;
             }
 
-            StopWorkers(TestStatus.Passed);
+            cb = StopWorkers(TestStatus.Passed);
         }
+
+        cb?.Invoke(TestStatus.Passed);
     }
 
     /// <summary>
     /// Tears down workers/timers, records the result, and publishes a final
-    /// telemetry sample. Caller must hold <see cref="_gate"/>.
+    /// telemetry sample. Caller must hold <see cref="_gate"/>. Returns the
+    /// completion callback; the caller invokes it AFTER releasing the lock so
+    /// the callback (which may re-enter the orchestrator) can never deadlock
+    /// against a concurrent Cancel holding the orchestrator lock.
     /// </summary>
-    private void StopWorkers(TestStatus finalStatus)
+    private Action<TestStatus>? StopWorkers(TestStatus finalStatus)
     {
         _telemetryTimer?.Dispose();
         _telemetryTimer = null;
@@ -178,7 +194,7 @@ public sealed class CpuStressModule : ITestModule
         PublishTelemetry(running: false, finalStatus);
         var cb = _onComplete;
         _onComplete = null;
-        cb?.Invoke(finalStatus);
+        return cb;
     }
 
     private void JoinWorkers()

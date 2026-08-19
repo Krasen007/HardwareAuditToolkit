@@ -46,8 +46,13 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     private bool _disposed;
 
     // Owned exclusively by the capture thread — never touched from another thread.
-    private IntPtr _hwnd;
-    private UIntPtr _classAtom;
+    // ThreadStatic so a stop→start restart cannot have a still-tearing-down old
+    // capture thread destroy the window/atom of the new capture thread: each
+    // thread tears down its own native window and class registration.
+    [ThreadStatic]
+    private static IntPtr _hwnd;
+    [ThreadStatic]
+    private static UIntPtr _classAtom;
     private readonly string _className = "HATKbdCapture_" + Guid.NewGuid().ToString("N");
     private WndProc? _wndProc; // referenced for the lifetime of the window
 
@@ -306,9 +311,10 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
         public IntPtr wParam;
         public IntPtr lParam;
         public uint time;
-        // Native MSG pads to 8-byte-align the POINT that follows; without this the
-        // struct is 4 bytes short and TranslateMessage/DispatchMessage corrupt it.
-        public int _pad;
+        // POINT is two LONGs (4-byte aligned). The interop marshaler aligns it
+        // after DWORD time at offset 36 (x64) / 20 (x86) automatically, matching
+        // the native layout — do NOT add an explicit padding field, which would
+        // shift the point by 4 bytes and corrupt the coordinates.
         public int ptX;
         public int ptY;
     }

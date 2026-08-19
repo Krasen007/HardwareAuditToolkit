@@ -22,7 +22,7 @@ namespace HardwareAuditToolkit.App.Services;
 public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
 {
     private const int HwndMessage = -3;
-    private const int WmInputDeviceChange = 0x00FF;
+    private const int WmInputDeviceChange = 0x00FE; // WM_INPUT_DEVICE_CHANGE (0x00FF is WM_INPUT)
     private const int WmDisplayChange = 0x007E;
     private const int GidcArrival = 1;
     private const int GidcRemoval = 2;
