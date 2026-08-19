@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HardwareAuditToolkit.App.Services;
+using HardwareAuditToolkit.App.Views;
 
 namespace HardwareAuditToolkit.App.ViewModels;
 
-public sealed partial class DashboardViewModel(INavigationService navigation) : ObservableObject
+public sealed partial class DashboardViewModel(INavigationService navigation, ReportExportService reportExport) : ObservableObject
 {
     public ObservableCollection<DashboardItemViewModel> Modules { get; } =
     [
@@ -20,4 +20,20 @@ public sealed partial class DashboardViewModel(INavigationService navigation) : 
     [RelayCommand]
     private void Back()
         => navigation.NavigateToDashboard();
+
+    /// <summary>
+    /// Runs the §9.6 export cascade for the current session, then shows the saved
+    /// location when a file was written. The dashboard carries an always-available
+    /// Export Report button (README Phase 6) so the report is reachable without
+    /// completing any test module.
+    /// </summary>
+    [RelayCommand]
+    private void ExportReport()
+    {
+        var result = reportExport.Export();
+        if (result.Success && result.JsonPath is not null)
+        {
+            ExportResultDialog.ShowResult(result);
+        }
+    }
 }
