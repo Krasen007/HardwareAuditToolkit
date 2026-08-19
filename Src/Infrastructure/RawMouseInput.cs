@@ -117,7 +117,7 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
         var wc = new Wndclassex
         {
             cbSize = (uint)Marshal.SizeOf<Wndclassex>(),
-            lpfnWndProc = _wndProc,
+            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
             hInstance = hInstance,
             lpszClassName = _className,
         };
@@ -271,8 +271,17 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     }
 
     // --- Native types & P/Invoke -------------------------------------------------
+    // RawInputDevice and Wndclassex are sequential STRUCTS, not Auto-layout
+    // classes: the interop marshaler cannot compute a layout for a class without
+    // [StructLayout] (Marshal.SizeOf throws ArgumentException), and a class
+    // passed by ref to RegisterClassEx fails with ERROR_INVALID_PARAMETER (87).
+    // The struct's string fields are marshaled as Unicode, so the P/Invokes that
+    // take class names must bind the W (Unicode) entry points too — mixing A/W
+    // makes CreateWindowEx/UnregisterClass fail with ERROR_CANNOT_FIND_WND_CLASS
+    // (1407) and capture silently dies.
 
-    private sealed class RawInputDevice
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RawInputDevice
     {
         public short UsagePage;
         public short Usage;
@@ -301,12 +310,12 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
         [FieldOffset(20)] public uint ulExtraInformation;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    private sealed class Wndclassex
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct Wndclassex
     {
         public uint cbSize;
         public int style;
-        public WndProc lpfnWndProc = null!;
+        public IntPtr lpfnWndProc;
         public int cbClsExtra;
         public int cbWndExtra;
         public IntPtr hInstance;
@@ -314,7 +323,7 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
         public IntPtr hCursor;
         public IntPtr hbrBackground;
         public string? lpszMenuName;
-        public string lpszClassName = string.Empty;
+        public string lpszClassName;
         public IntPtr hIconSm;
     }
 
@@ -336,10 +345,10 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
 
     private delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern UIntPtr RegisterClassEx([In] ref Wndclassex lpwcx);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern IntPtr CreateWindowEx(
         int dwExStyle, string lpClassName, string? lpWindowName, int dwStyle,
         int x, int y, int nWidth, int nHeight,
@@ -349,7 +358,7 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool DestroyWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool UnregisterClass(string lpClassName, IntPtr hInstance);
 
