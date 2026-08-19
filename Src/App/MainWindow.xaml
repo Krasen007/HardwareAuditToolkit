@@ -6,7 +6,6 @@
         xmlns:vm="clr-namespace:HardwareAuditToolkit.App.ViewModels"
         xmlns:views="clr-namespace:HardwareAuditToolkit.App.Views"
         mc:Ignorable="d"
-        Title="Hardware Audit Toolkit"
         Height="640" Width="920"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
@@ -35,39 +34,6 @@
     </Window.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- Persistent header: brand + always-available mouse-only export and exit paths (§6, §10 Phase 6). -->
-        <Border Grid.Row="0" Background="#2D2D30" Padding="14,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="Hardware Audit Toolkit"
-                           Foreground="White" FontSize="16" FontWeight="SemiBold"
-                           VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="Export Report"
-                            Padding="14,6" FontSize="13" FontWeight="SemiBold"
-                            Foreground="White" Background="#2E7D32"
-                            BorderBrush="#1B5E20" BorderThickness="1"
-                            Margin="0,0,8,0" Cursor="Hand"
-                            Command="{Binding ExportCommand}" />
-                    <Button Content="Exit Test (Ctrl+E)"
-                            Padding="14,6" FontSize="13" FontWeight="SemiBold"
-                            Foreground="White" Background="#C0392B"
-                            BorderBrush="#922B21" BorderThickness="1"
-                            Cursor="Hand"
-                            Command="{Binding ExitCommand}" />
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Current screen -->
-        <ContentControl Grid.Row="1" Content="{Binding CurrentScreen}" />
+        <ContentControl Content="{Binding CurrentScreen}" />
     </Grid>
 </Window>
