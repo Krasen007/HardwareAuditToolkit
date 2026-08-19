@@ -25,6 +25,9 @@ dotnet build Src\HardwareAuditToolkit.sln
 dotnet test  Src\HardwareAuditToolkit.sln
 ```
 
+The solution builds with **zero warnings** and the full xunit suite passes on a
+clean `dotnet test`.
+
 ## Publish
 
 ```powershell
@@ -95,9 +98,41 @@ Outputs land in `Src\App\bin\publish\`.
   each candidate probed with a quick write-test so a vanishing volume (e.g. the USB
   stick pulled mid-write) is caught without losing the in-memory session; an
   always-available **Export Report** button lives in the persistent header (and on
-  the dashboard). 43 tests pass (`TestOrchestratorTests` + `Phase2ModuleTests` +
+  the dashboard). 46 tests pass (`TestOrchestratorTests` + `Phase2ModuleTests` +
   `KeyboardModuleTests` + `MouseModuleTests` + `MonitorModuleTests` +
   `ReportExportTests`).
+
+---
+
+## Recent code-quality cleanup & decisions
+
+A pass resolved every open analyzer diagnostic (IDE / CA / Roslynator / SYSLIB) so
+the solution builds with **zero warnings, zero errors** (46 xunit tests passing).
+The style rules applied are now the project's house style:
+
+- **Collection expressions** — target-typed `[]` / `[...]` in place of
+  `new List<T>()`, `Array.Empty<T>()`, `new[] { ... }`, and `new()` (IDE0028/
+  IDE0300/IDE0301).
+- **Primary constructors & auto-properties** — e.g. `CpuStressModule(ISensorProvider
+  sensors)` replaces an explicit constructor + backing field where there is no logic
+  in between (IDE0290/RCS1085).
+- **Explicit precedence parentheses** — `a + (b * c)` and
+  `(a * b) + (c * d)` emphasize a higher-precedence operand of a lower-precedence
+  operator (RCS1123).
+- **Single-char `string.Contains(char)`** and removal of redundant `!` where the
+  target API already accepts null (CA1847/RCS1249).
+
+### Interop decision: `DllImport` stays (SYSLIB1054 suppressed)
+
+`SYSLIB1054` recommends migrating P/Invokes to `LibraryImport`. **We keep
+`DllImport`** for the Win32 / `dxva2.dll` wrappers (`DeviceChangeService`,
+`DdcCiControl`, `RawKeyboardInput`, `RawMouseInput`) because the `LibraryImport`
+source generator cannot marshal these signatures: non-blittable structs carrying
+`string` / `ByValTStr` members (`Wndclassex`, `MONITORINFOEX`, `PHYSICAL_MONITOR`)
+and a delegate callback (`EnumDisplayMonitors`). The suggestion is suppressed per
+file (`#pragma warning disable/restore SYSLIB1054`) behind a justification comment.
+A future migration would require making the native types blittable and enabling
+`AllowUnsafeBlocks`.
 
 ---
 
@@ -113,4 +148,11 @@ Outputs land in `Src\App\bin\publish\`.
   `dotnet test Src\HardwareAuditToolkit.sln`; **F5** in VS Code launches the WPF app
   (see `.vscode/launch.json`). On-hardware verification required for the "every
   physical key registers" DoD.
+- Use the analyzer-driven house style in ["Recent code-quality cleanup &
+  decisions"](#recent-code-quality-cleanup--decisions) (collection expressions,
+  primary constructors, explicit-precedence parentheses).
+- Interop P/Invoke: keep `DllImport` and do **not** convert to `LibraryImport` for
+  the existing Win32 / `dxva2.dll` signatures that carry non-blittable structs or a
+  delegate callback — `SYSLIB1054` is already suppressed with justification (see
+  the interop decision above).
 

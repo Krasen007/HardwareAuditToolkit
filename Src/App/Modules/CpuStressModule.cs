@@ -25,46 +25,34 @@ namespace HardwareAuditToolkit.App.Modules;
 /// <see cref="TestStatus.Cancelled"/> (architecture §4).
 /// </para>
 /// </summary>
-public sealed class CpuStressModule : ITestModule
+public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
 {
     public const int DefaultDurationSeconds = 300; // §8 conservative fixed cap.
 
-    private readonly ISensorProvider _sensors;
     private readonly object _gate = new();
-    private ModulePhase _phase = ModulePhase.NotStarted;
     private Action<TestStatus>? _onComplete;
-    private Thread[] _workers = Array.Empty<Thread>();
+    private Thread[] _workers = [];
     private CancellationTokenSource? _cts;
     private Timer? _telemetryTimer;
     private DateTime _startedAt;
     private int _coreCount;
     private TimeSpan _duration = TimeSpan.FromSeconds(DefaultDurationSeconds);
 
-    public CpuStressModule(ISensorProvider sensors)
-    {
-        _sensors = sensors;
-        Metadata = new StressMetadata();
-    }
-
-    public IModuleMetadata Metadata { get; }
+    public IModuleMetadata Metadata { get; } = new StressMetadata();
 
     public string ModuleId => "stress";
 
-    public ModulePhase CurrentPhase
-    {
-        get => _phase;
-        private set => _phase = value;
-    }
+    public ModulePhase CurrentPhase { get; private set; } = ModulePhase.NotStarted;
 
-    public bool IsRunning => _phase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
+    public bool IsRunning => CurrentPhase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
 
-    public IList<ModuleMeasurement> Measurements { get; } = new List<ModuleMeasurement>();
+    public IList<ModuleMeasurement> Measurements { get; } = [];
 
-    public IList<string> Findings { get; } = new List<string>();
+    public IList<string> Findings { get; } = [];
 
-    public IList<string> OperatorActions { get; } = new List<string>();
+    public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = new List<string>();
+    public IList<string> Artifacts { get; } = [];
 
     /// <summary>
     /// Target run duration. Bounded to <see cref="DefaultDurationSeconds"/> so the
@@ -211,7 +199,7 @@ public sealed class CpuStressModule : ITestModule
             }
         }
 
-        _workers = Array.Empty<Thread>();
+        _workers = [];
         _cts?.Dispose();
         _cts = null;
     }
@@ -227,7 +215,7 @@ public sealed class CpuStressModule : ITestModule
         {
             for (int k = 0; k < 20000; k++)
             {
-                accumulator = Math.Sqrt(accumulator + k * 0.0001) + Math.Sin(k);
+                accumulator = Math.Sqrt(accumulator + (k * 0.0001)) + Math.Sin(k);
             }
 
             // Tiny yield so a hard spin doesn't completely starve other
@@ -252,7 +240,7 @@ public sealed class CpuStressModule : ITestModule
         var temps = new List<float?>();
         try
         {
-            foreach (var reading in _sensors.ReadAll())
+            foreach (var reading in sensors.ReadAll())
             {
                 bool cpu = reading.SensorName.Contains("CPU", StringComparison.OrdinalIgnoreCase) ||
                            reading.HardwareName.Contains("CPU", StringComparison.OrdinalIgnoreCase);
@@ -295,7 +283,7 @@ public sealed class CpuStressModule : ITestModule
         public string DisplayName => "CPU Stress Test";
         public string Description => "Fixed-duration burn-in across all cores.";
         public string Category => "stress";
-        public string[] RequiredCapabilities => Array.Empty<string>();
+        public string[] RequiredCapabilities => [];
         public bool IsExclusive => true;
         public TimeSpan? MaxDuration => TimeSpan.FromSeconds(DefaultDurationSeconds + 10);
     }

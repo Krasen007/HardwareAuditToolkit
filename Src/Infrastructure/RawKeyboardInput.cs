@@ -330,6 +330,10 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
 
     private delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
+    // SYSLIB1054 suggests LibraryImport, but the LibraryImport source generator
+    // cannot marshal the non-blittable Wndclassex/MSG structures these externs
+    // use. DllImport is intentional here.
+#pragma warning disable SYSLIB1054
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern UIntPtr RegisterClassEx([In] ref Wndclassex lpwcx);
 
@@ -378,4 +382,5 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
 
     [DllImport("kernel32.dll")]
     private static extern int GetCurrentThreadId();
+#pragma warning restore SYSLIB1054
 }

@@ -39,7 +39,7 @@ public sealed class MouseTestModule : ITestModule
     private EventHandler<RawMouseSample>? _handler;
     private bool _deviceSubscribed;
 
-    private readonly Dictionary<ButtonId, DragState> _drags = new();
+    private readonly Dictionary<ButtonId, DragState> _drags = [];
     private int _leftClicks;
     private int _rightClicks;
     private int _middleClicks;
@@ -70,13 +70,13 @@ public sealed class MouseTestModule : ITestModule
 
     public bool IsRunning => CurrentPhase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
 
-    public IList<ModuleMeasurement> Measurements { get; } = new List<ModuleMeasurement>();
+    public IList<ModuleMeasurement> Measurements { get; } = [];
 
-    public IList<string> Findings { get; } = new List<string>();
+    public IList<string> Findings { get; } = [];
 
-    public IList<string> OperatorActions { get; } = new List<string>();
+    public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = new List<string>();
+    public IList<string> Artifacts { get; } = [];
 
     public int LeftClicks { get { lock (_gate) return _leftClicks; } }
     public int RightClicks { get { lock (_gate) return _rightClicks; } }
@@ -247,7 +247,7 @@ public sealed class MouseTestModule : ITestModule
         {
             lock (_gate)
             {
-                double d = Math.Sqrt(sample.DeltaX * sample.DeltaX + sample.DeltaY * sample.DeltaY);
+                double d = Math.Sqrt((sample.DeltaX * sample.DeltaX) + (sample.DeltaY * sample.DeltaY));
                 foreach (var kvp in _drags)
                 {
                     var state = kvp.Value;
@@ -478,7 +478,7 @@ public sealed class MouseTestModule : ITestModule
         public string DisplayName => "Mouse Test";
         public string Description => "Click/scroll/drag log and tracing accuracy.";
         public string Category => "mouse";
-        public string[] RequiredCapabilities => new[] { "raw mouse input" };
+        public string[] RequiredCapabilities => ["raw mouse input"];
         public bool IsExclusive => true;
         public TimeSpan? MaxDuration => TimeSpan.FromMinutes(30);
     }

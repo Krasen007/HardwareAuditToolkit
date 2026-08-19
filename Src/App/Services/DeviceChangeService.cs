@@ -230,6 +230,10 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
         public uint dwType;
     }
 
+    // SYSLIB1054 suggests LibraryImport, but the LibraryImport source generator
+    // cannot marshal these signatures (non-blittable class/struct types and a
+    // delegate callback). DllImport is intentional here.
+#pragma warning disable SYSLIB1054
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool RegisterRawInputDevices(
@@ -241,4 +245,5 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int nIndex);
+#pragma warning restore SYSLIB1054
 }

@@ -44,7 +44,7 @@ public class ReportExportTests
 
             var result = exporter.Export(session, new ReportExportOptions
             {
-                PreferredDirectories = new[] { dir },
+                PreferredDirectories = [dir],
             });
 
             Assert.True(result.Success);
@@ -54,8 +54,8 @@ public class ReportExportTests
             Assert.True(File.Exists(result.HtmlPath));
             Assert.Equal(result.JsonPath, session.JsonPath);
             Assert.Equal(result.HtmlPath, session.ReportPath);
-            Assert.Contains(".json", result.JsonPath!);
-            Assert.Contains(".html", result.HtmlPath!);
+            Assert.Contains(".json", result.JsonPath);
+            Assert.Contains(".html", result.HtmlPath);
         }
         finally
         {
@@ -75,7 +75,7 @@ public class ReportExportTests
 
             var result = exporter.Export(session, new ReportExportOptions
             {
-                PreferredDirectories = new[] { dir },
+                PreferredDirectories = [dir],
             });
 
             string json = File.ReadAllText(result.JsonPath!);
@@ -107,7 +107,7 @@ public class ReportExportTests
 
             var result = exporter.Export(session, new ReportExportOptions
             {
-                PreferredDirectories = new[] { InvalidDirectoryPath() },
+                PreferredDirectories = [InvalidDirectoryPath()],
                 RequestManualFolder = () =>
                 {
                     pickerCalled = true;
@@ -136,7 +136,7 @@ public class ReportExportTests
 
         var result = exporter.Export(session, new ReportExportOptions
         {
-            PreferredDirectories = new[] { InvalidDirectoryPath() },
+            PreferredDirectories = [InvalidDirectoryPath()],
             RequestManualFolder = () => null,
             ShowClipboardFallback = json =>
             {
@@ -165,7 +165,7 @@ public class ReportExportTests
 
         var result = exporter.Export(session, new ReportExportOptions
         {
-            PreferredDirectories = new[] { InvalidDirectoryPath() },
+            PreferredDirectories = [InvalidDirectoryPath()],
             RequestManualFolder = null,
             ShowClipboardFallback = null,
         });

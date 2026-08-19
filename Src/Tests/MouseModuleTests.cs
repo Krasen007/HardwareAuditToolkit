@@ -35,7 +35,7 @@ public class MouseModuleTests
             Hostname = Environment.MachineName,
             StartedAt = DateTime.UtcNow,
         };
-        orchestrator = new TestOrchestrator(session, new ITestModule[] { module });
+        orchestrator = new TestOrchestrator(session, [module]);
         return module;
     }
 
@@ -172,7 +172,7 @@ public class MouseModuleTests
         module.RecordTrace(87.5, 70, 80, "duck");
         module.Confirm();
         var result = GetSessionResult(orchestrator);
-        Assert.Contains(result.Measurements, m => m.Label == "Tracing path coverage" && (m.Value ?? string.Empty).Contains("87") && (m.Value ?? string.Empty).Contains("%"));
+        Assert.Contains(result.Measurements, m => m.Label == "Tracing path coverage" && (m.Value ?? string.Empty).Contains("87") && (m.Value ?? string.Empty).Contains('%'));
         Assert.Contains(result.Findings, f => (f ?? string.Empty).Contains("path coverage") && (f ?? string.Empty).Contains("87"));
     }
 
@@ -183,7 +183,7 @@ public class MouseModuleTests
         var configure = typeof(HardwareAuditToolkit.App.App).GetMethod(
             "ConfigureServices", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         Assert.NotNull(configure);
-        configure!.Invoke(null, new object[] { services });
+        configure!.Invoke(null, [services]);
 
         Assert.Single(services, d => d.ServiceType == typeof(MouseTestModuleViewModel)
                                      && d.Lifetime == ServiceLifetime.Transient);

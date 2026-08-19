@@ -41,7 +41,7 @@ public sealed class DdcCiControl : IDdcCiControl
         }
         catch
         {
-            return Array.Empty<MonitorInfo>();
+            return [];
         }
         finally
         {
@@ -290,6 +290,10 @@ public sealed class DdcCiControl : IDdcCiControl
 
     private delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 
+    // SYSLIB1054 suggests LibraryImport, but the LibraryImport source generator
+    // cannot marshal these signatures (structs with ByValTStr string members and
+    // a delegate callback). DllImport is intentional here.
+#pragma warning disable SYSLIB1054
     [DllImport("user32.dll")]
     private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumDelegate lpfnEnum, IntPtr dwData);
 
@@ -322,4 +326,5 @@ public sealed class DdcCiControl : IDdcCiControl
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool FreeLibrary(IntPtr hModule);
+#pragma warning restore SYSLIB1054
 }
