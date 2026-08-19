@@ -56,18 +56,30 @@
 
         <Border Grid.Row="2" Margin="0,12,0,0" Padding="12" CornerRadius="8"
                 Background="#252526" BorderBrush="#3F3F46" BorderThickness="1">
-            <StackPanel>
-                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8">
-                    <Run Text="Connected devices — Keyboards:" />
-                    <Run Text="{Binding DataContext.DeviceChange.KeyboardCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
-                    <Run Text="  Mice:" />
-                    <Run Text="{Binding DataContext.DeviceChange.MouseCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
-                    <Run Text="  Monitors:" />
-                    <Run Text="{Binding DataContext.DeviceChange.MonitorCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
-                </TextBlock>
-                <TextBlock Text="{Binding DataContext.DeviceChange.LastEvent, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
-                           FontSize="11" Foreground="#999999" Margin="0,4,0,0" />
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8">
+                        <Run Text="Connected devices — Keyboards:" />
+                        <Run Text="{Binding DataContext.DeviceChange.KeyboardCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
+                        <Run Text="  Mice:" />
+                        <Run Text="{Binding DataContext.DeviceChange.MouseCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
+                        <Run Text="  Monitors:" />
+                        <Run Text="{Binding DataContext.DeviceChange.MonitorCount, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}" />
+                    </TextBlock>
+                    <TextBlock Text="{Binding DataContext.DeviceChange.LastEvent, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
+                               FontSize="11" Foreground="#999999" Margin="0,4,0,0" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="Export Report"
+                        Padding="14,8" FontSize="13" FontWeight="SemiBold"
+                        Foreground="White" Background="#2E7D32"
+                        BorderBrush="#1B5E20" BorderThickness="1"
+                        Cursor="Hand" VerticalAlignment="Center"
+                        Command="{Binding ExportCommand}" />
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

@@ -186,6 +186,10 @@ public partial class App : Application
         services.AddSingleton(session);
         services.AddSingleton<TestOrchestrator>();
 
+        // Phase 6 — reporting: pure exporter (Core) + WPF-bound export service (App).
+        services.AddSingleton<Core.Reporting.SessionExporter>();
+        services.AddSingleton<ReportExportService>();
+
         services.AddSingleton<MainWindow>();
     }
 

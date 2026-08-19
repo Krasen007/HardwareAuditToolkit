@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace HardwareAuditToolkit.Core;
 
 /// <summary>
@@ -41,6 +43,7 @@ public interface IModuleMetadata
 /// <summary>
 /// Result status of a test module execution (§4).
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TestStatus
 {
     /// <summary>The module hasn't been started this session.</summary>

@@ -15,7 +15,7 @@ public sealed class NavigationService : INavigationService
     }
 
     public void NavigateToDashboard()
-        => SetScreen(new DashboardViewModel(this));
+        => SetScreen(_services.GetRequiredService<DashboardViewModel>());
 
     public void NavigateToModule(string moduleId)
     {

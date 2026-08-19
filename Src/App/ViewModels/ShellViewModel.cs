@@ -3,12 +3,15 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.App.Messages;
 using HardwareAuditToolkit.App.Services;
+using HardwareAuditToolkit.Core.Reporting;
+using System.Windows;
 
 namespace HardwareAuditToolkit.App.ViewModels;
 
 /// <summary>
 /// Root view model for the shell window. Hosts the persistent header (with the
-/// always-available Exit Test command) and the current screen content.
+/// always-available Exit Test command and the always-available Export Report command)
+/// and the current screen content.
 /// </summary>
 public sealed partial class ShellViewModel : ObservableObject
 {
@@ -22,8 +25,11 @@ public sealed partial class ShellViewModel : ObservableObject
     /// <summary>Set by the bootstrap so the dashboard can show live device counts.</summary>
     public Services.DeviceChangeService DeviceChange { get; set; } = null!;
 
-    public ShellViewModel()
+    private readonly ReportExportService _reportExport;
+
+    public ShellViewModel(ReportExportService reportExport)
     {
+        _reportExport = reportExport ?? throw new ArgumentNullException(nameof(reportExport));
         // CurrentScreen is populated by the bootstrap once Navigation is wired.
     }
 
@@ -34,6 +40,33 @@ public sealed partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void Exit()
         => WeakReferenceMessenger.Default.Send(new ExitRequestedMessage());
+
+    /// <summary>
+    /// Mouse-only, always-available export path (§10 Phase 6). Runs the full
+    /// write-path fallback cascade and reports the outcome to the operator.
+    /// </summary>
+    [RelayCommand]
+    private void Export()
+    {
+        ReportExportResult result = _reportExport.Export();
+        if (result.Success)
+        {
+            string where = result.JsonPath ?? "clipboard";
+            MessageBox.Show(
+                $"Audit report exported.\nJSON: {where}\nHTML: {result.HtmlPath ?? where}",
+                "Export",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        else
+        {
+            MessageBox.Show(
+                result.Message ?? "The audit report could not be exported.",
+                "Export failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
 
     public void ShowDashboard()
         => Navigation.NavigateToDashboard();

@@ -87,8 +87,17 @@ Outputs land in `Src\App\bin\publish\`.
    correctly across mixed-DPI setups (§9.4). 36 tests pass (orchestrator +
    `KeyboardModuleTests` + `Phase2ModuleTests` + `MouseModuleTests` +
    `MonitorModuleTests`).
-- **Phase 6 (reporting) — next:** see the architecture doc §10 and the existing
-   Phase 2–5 patterns for where to hook it in.
+- **Phase 6 (reporting) — done:** `SessionExporter` (Core, no UI/Win32 refs)
+  serializes `AuditSession` to a structured JSON file (`TestStatus` written as a
+  string enum) plus a self-contained, printable HTML report (`HtmlReportTemplate`);
+  the App `ReportExportService` runs the full write-path fallback cascade (§9.6:
+  portable app dir → Desktop → %TEMP% → manual folder picker → clipboard modal),
+  each candidate probed with a quick write-test so a vanishing volume (e.g. the USB
+  stick pulled mid-write) is caught without losing the in-memory session; an
+  always-available **Export Report** button lives in the persistent header (and on
+  the dashboard). 43 tests pass (`TestOrchestratorTests` + `Phase2ModuleTests` +
+  `KeyboardModuleTests` + `MouseModuleTests` + `MonitorModuleTests` +
+  `ReportExportTests`).
 
 ---
 
