@@ -6,7 +6,8 @@
         xmlns:vm="clr-namespace:HardwareAuditToolkit.App.ViewModels"
         xmlns:views="clr-namespace:HardwareAuditToolkit.App.Views"
         mc:Ignorable="d"
-        Height="640" Width="920"
+        Title="Hardware Audit Toolkit"
+        Height="640" Width="1300"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <!-- ViewModel-first navigation: the content region renders the current screen. -->
