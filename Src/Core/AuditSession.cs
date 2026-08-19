@@ -35,7 +35,7 @@ public class AuditSession
     /// List of module results from this session.
     /// </summary>
     [JsonPropertyName("modules")]
-    public List<ModuleResult> Modules { get; set; } = new();
+    public List<ModuleResult> Modules { get; set; } = [];
 
     /// <summary>
     /// Overall session status.
@@ -107,26 +107,26 @@ public class ModuleResult
     /// Any warnings or findings from the module.
     /// </summary>
     [JsonPropertyName("findings")]
-    public List<string> Findings { get; set; } = new();
+    public List<string> Findings { get; set; } = [];
 
     /// <summary>
     /// Live measurements collected during the module run.
     /// </summary>
     [JsonPropertyName("measurements")]
-    public List<ModuleMeasurement> Measurements { get; set; } = new();
+    public List<ModuleMeasurement> Measurements { get; set; } = [];
 
     /// <summary>
     /// Operator actions logged during the module.
     /// </summary>
     [JsonPropertyName("operatorActions")]
-    public List<string> OperatorActions { get; set; } = new();
+    public List<string> OperatorActions { get; set; } = [];
 
     /// <summary>
     /// Loose artifact files produced by the module (screenshots, raw event logs,
     /// exported canvases) — stored next to the session JSON.
     /// </summary>
     [JsonPropertyName("artifacts")]
-    public List<string> Artifacts { get; set; } = new();
+    public List<string> Artifacts { get; set; } = [];
 }
 
 /// <summary>

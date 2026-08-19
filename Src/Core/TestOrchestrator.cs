@@ -1,8 +1,8 @@
 namespace HardwareAuditToolkit.Core;
 
 /// <summary>
-/// Coordinates test modules for a single audit session (§4).
-///
+/// <para>Coordinates test modules for a single audit session (§4).</para>
+/// <para>
 /// Rules enforced here:
 ///  - Exclusive modules (keyboard, mouse, monitor, CPU stress) run strictly one
 ///    at a time, sequentially. A module advertises this via
@@ -14,6 +14,7 @@ namespace HardwareAuditToolkit.Core;
 ///    exceeds that budget (§6 unattended-run timeout).
 ///  - Each run appends exactly one <see cref="ModuleResult"/> to the session;
 ///    the running result is updated in place when the module completes.
+/// </para>
 /// </summary>
 public sealed class TestOrchestrator : IDisposable
 {
@@ -40,7 +41,7 @@ public sealed class TestOrchestrator : IDisposable
         {
             lock (_gate)
             {
-                return _running.Values.Select(e => e.Module).ToList();
+                return [.. _running.Values.Select(e => e.Module)];
             }
         }
     }
@@ -67,7 +68,7 @@ public sealed class TestOrchestrator : IDisposable
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
-        var list = modules?.ToList() ?? new List<ITestModule>();
+        var list = modules?.ToList() ?? [];
         Modules = list.AsReadOnly();
         _modulesById = new Dictionary<string, ITestModule>(StringComparer.OrdinalIgnoreCase);
         foreach (var module in list)
@@ -359,12 +360,7 @@ public sealed class TestOrchestrator : IDisposable
     }
 
     private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(TestOrchestrator));
-        }
-    }
+        => ObjectDisposedException.ThrowIf(_disposed, this);
 
     private sealed record RunningEntry(ITestModule Module, ModuleResult Result, ITimer? Timer);
 }

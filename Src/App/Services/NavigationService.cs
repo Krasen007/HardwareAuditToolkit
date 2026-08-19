@@ -3,16 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HardwareAuditToolkit.App.Services;
 
-public sealed class NavigationService : INavigationService
+public sealed class NavigationService(ShellViewModel shell, IServiceProvider services) : INavigationService
 {
-    private readonly ShellViewModel _shell;
-    private readonly IServiceProvider _services;
-
-    public NavigationService(ShellViewModel shell, IServiceProvider services)
-    {
-        _shell = shell;
-        _services = services;
-    }
+    private readonly ShellViewModel _shell = shell;
+    private readonly IServiceProvider _services = services;
 
     public void NavigateToDashboard()
         => SetScreen(_services.GetRequiredService<DashboardViewModel>());

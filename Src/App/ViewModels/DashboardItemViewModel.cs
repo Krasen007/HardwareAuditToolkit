@@ -9,33 +9,21 @@ namespace HardwareAuditToolkit.App.ViewModels;
 /// modules; the real <see cref="Core.ITestModule"/> implementations land in
 /// later phases and will replace these stubs).
 /// </summary>
-public sealed partial class DashboardItemViewModel : ObservableObject
+public sealed partial class DashboardItemViewModel(
+    string moduleId,
+    string displayName,
+    string description,
+    string category,
+    bool isExclusive,
+    INavigationService navigation) : ObservableObject
 {
-    public string ModuleId { get; }
-    public string DisplayName { get; }
-    public string Description { get; }
-    public string Category { get; }
-    public bool IsExclusive { get; }
+    public string ModuleId { get; } = moduleId;
+    public string DisplayName { get; } = displayName;
+    public string Description { get; } = description;
+    public string Category { get; } = category;
+    public bool IsExclusive { get; } = isExclusive;
 
     [RelayCommand]
     private void Open()
-        => _navigation.NavigateToModule(ModuleId);
-
-    private readonly INavigationService _navigation;
-
-    public DashboardItemViewModel(
-        string moduleId,
-        string displayName,
-        string description,
-        string category,
-        bool isExclusive,
-        INavigationService navigation)
-    {
-        ModuleId = moduleId;
-        DisplayName = displayName;
-        Description = description;
-        Category = category;
-        IsExclusive = isExclusive;
-        _navigation = navigation;
-    }
+        => navigation.NavigateToModule(ModuleId);
 }

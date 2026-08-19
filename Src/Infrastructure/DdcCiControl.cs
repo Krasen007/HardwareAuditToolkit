@@ -51,15 +51,15 @@ public sealed class DdcCiControl : IDdcCiControl
             }
         }
 
-        var result = new List<MonitorInfo>();
+        List<MonitorInfo> result = [];
         for (int i = 0; i < collected.Items.Count; i++)
         {
-            var it = collected.Items[i];
-            string friendly = it.Device;
+            var (hmonitor, rect, device, primary) = collected.Items[i];
+            string friendly = device;
             try
             {
                 var pm = new PHYSICAL_MONITOR[1];
-                if (GetPhysicalMonitorsFromHMONITOR(it.Hmonitor, 1, pm))
+                if (GetPhysicalMonitorsFromHMONITOR(hmonitor, 1, pm))
                 {
                     if (!string.IsNullOrWhiteSpace(pm[0].szPhysicalMonitorDescription))
                     {
@@ -71,19 +71,19 @@ public sealed class DdcCiControl : IDdcCiControl
             }
             catch
             {
-                friendly = it.Device;
+                friendly = device;
             }
 
             result.Add(new MonitorInfo
             {
                 Index = i,
-                DeviceName = it.Device,
+                DeviceName = device,
                 FriendlyName = friendly,
-                IsPrimary = it.Primary,
-                Left = it.Rect.Left,
-                Top = it.Rect.Top,
-                Width = Math.Max(1, it.Rect.Right - it.Rect.Left),
-                Height = Math.Max(1, it.Rect.Bottom - it.Rect.Top),
+                IsPrimary = primary,
+                Left = rect.Left,
+                Top = rect.Top,
+                Width = Math.Max(1, rect.Right - rect.Left),
+                Height = Math.Max(1, rect.Bottom - rect.Top),
             });
         }
 
@@ -194,7 +194,7 @@ public sealed class DdcCiControl : IDdcCiControl
         }
     }
 
-    private IntPtr GetHmonitor(int index)
+    private static IntPtr GetHmonitor(int index)
     {
         var collected = new MonitorEnum();
         var handle = GCHandle.Alloc(collected);
@@ -224,7 +224,7 @@ public sealed class DdcCiControl : IDdcCiControl
 
     private sealed class MonitorEnum
     {
-        public readonly List<(IntPtr Hmonitor, RECT Rect, string Device, bool Primary)> Items = new();
+        public readonly List<(IntPtr Hmonitor, RECT Rect, string Device, bool Primary)> Items = [];
     }
 
     private static bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData)
@@ -313,10 +313,10 @@ public sealed class DdcCiControl : IDdcCiControl
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetVCPFeature(IntPtr hPhysicalMonitor, byte bVCPCode, uint dwNewValue);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern IntPtr LoadLibrary(string lpLibFileName);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
     [DllImport("kernel32.dll", SetLastError = true)]

@@ -98,8 +98,8 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         {
             double x = k.X * Unit;
             double y = k.Row * (Unit + Gap);
-            double w = k.Width * Unit - Gap;
-            double h = k.Height * Unit - Gap;
+            double w = (k.Width * Unit) - Gap;
+            double h = (k.Height * Unit) - Gap;
             list.Add(new KeyViewModel(k.Id, k.Label, x, y, w, h));
             maxX = Math.Max(maxX, x + w);
             maxY = Math.Max(maxY, y + h);
@@ -252,7 +252,7 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         }
 
         int targetLen = WpmTarget.Length;
-        double grossWpm = (targetLen / 5.0) / minutes;
+        double grossWpm = targetLen / 5.0 / minutes;
 
         int correct = 0;
         int compareLen = Math.Min(TypedText.Length, targetLen);

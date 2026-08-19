@@ -137,7 +137,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
         }
 
         if (!RegisterRawInputDevices(
-                new[] { new RawInputDevice { UsagePage = 0x01, Usage = 0x06, Flags = RidevInputSink, Target = _hwnd } },
+                [ new RawInputDevice { UsagePage = 0x01, Usage = 0x06, Flags = RidevInputSink, Target = _hwnd } ],
                 1,
                 Marshal.SizeOf<RawInputDevice>()))
         {
@@ -166,7 +166,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
         if (_hwnd != IntPtr.Zero)
         {
             RegisterRawInputDevices(
-                new[] { new RawInputDevice { UsagePage = 0x01, Usage = 0x06, Flags = RidevRemove, Target = IntPtr.Zero } },
+                [ new RawInputDevice { UsagePage = 0x01, Usage = 0x06, Flags = RidevRemove, Target = IntPtr.Zero } ],
                 1,
                 Marshal.SizeOf<RawInputDevice>());
             DestroyWindow(_hwnd);
@@ -347,7 +347,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool UnregisterClass(string lpClassName, IntPtr hInstance);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
 
     [DllImport("user32.dll")]

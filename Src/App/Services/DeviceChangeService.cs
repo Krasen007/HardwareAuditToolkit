@@ -25,7 +25,6 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
     private const int WmInputDeviceChange = 0x00FE; // WM_INPUT_DEVICE_CHANGE (0x00FF is WM_INPUT)
     private const int WmDisplayChange = 0x007E;
     private const int GidcArrival = 1;
-    private const int GidcRemoval = 2;
     private const int RidevDevnotify = 0x2000;
     private const int RidevInputSink = 0x100;
     private const int RimTypekeyboard = 1;
@@ -115,7 +114,7 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
     {
         if (msg == WmInputDeviceChange)
         {
-            string kind = (int)wParam == GidcArrival ? "arrived" : "removed";
+            string kind = checked((int)wParam) == GidcArrival ? "arrived" : "removed";
             Refresh();
             LastEvent = $"Input device {kind}. Keyboards={KeyboardCount}, Mice={MouseCount}.";
             Publish();
@@ -154,7 +153,7 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
         MonitorCount = GetSystemMetrics(SmCMonitors);
     }
 
-    private void EnumerateRawInput(out int keyboards, out int mice)
+    private static void EnumerateRawInput(out int keyboards, out int mice)
     {
         keyboards = 0;
         mice = 0;

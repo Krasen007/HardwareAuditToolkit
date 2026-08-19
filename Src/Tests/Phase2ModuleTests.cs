@@ -116,7 +116,7 @@ public class Phase2ModuleTests
         var configure = typeof(HardwareAuditToolkit.App.App).GetMethod(
             "ConfigureServices", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(configure);
-        configure!.Invoke(null, new object[] { services });
+        configure!.Invoke(null, [services]);
 
         var infoDescriptor = Assert.Single(
             services, d => d.ServiceType == typeof(SystemInfoModuleViewModel));

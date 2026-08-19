@@ -7,33 +7,19 @@ namespace HardwareAuditToolkit.App.Keyboard;
 /// <see cref="Infrastructure.RawKeyboardInput"/>, so a physical keypress maps
 /// directly to its tile.
 /// </summary>
-public sealed class KeyLayoutDef
+public sealed class KeyLayoutDef(int id, string label, int row, double x, double width, double height = 1)
 {
-    public int Id { get; }
+    public int Id { get; } = id;
 
-    public string Label { get; }
+    public string Label { get; } = label;
 
-    /// <summary>Row index (0 = top function row).</summary>
-    public int Row { get; }
+    public int Row { get; } = row;
 
-    /// <summary>Horizontal position in key units from the left edge.</summary>
-    public double X { get; }
+    public double X { get; } = x;
 
-    /// <summary>Width in key units (most keys = 1).</summary>
-    public double Width { get; }
+    public double Width { get; } = width;
 
-    /// <summary>Height in key units; a few cluster keys span two rows.</summary>
-    public double Height { get; }
-
-    public KeyLayoutDef(int id, string label, int row, double x, double width, double height = 1)
-    {
-        Id = id;
-        Label = label;
-        Row = row;
-        X = x;
-        Width = width;
-        Height = height;
-    }
+    public double Height { get; } = height;
 }
 
 /// <summary>
@@ -63,7 +49,7 @@ public static class KeyboardLayout
     private static int C(int scan, bool extended = false)
         => extended ? (0xE000 | scan) : scan;
 
-    private static IReadOnlyList<KeyLayoutDef> Build()
+    private static List<KeyLayoutDef> Build()
     {
         var keys = new List<KeyLayoutDef>();
 
@@ -71,11 +57,11 @@ public static class KeyboardLayout
         void Row(int row, params (string Label, int Id, double Width, double Gap)[] entries)
         {
             double x = 0;
-            foreach (var e in entries)
+            foreach (var (Label, Id, Width, Gap) in entries)
             {
-                x += e.Gap;
-                keys.Add(new KeyLayoutDef(e.Id, e.Label, row, x, e.Width));
-                x += e.Width;
+                x += Gap;
+                keys.Add(new KeyLayoutDef(Id, Label, row, x, Width));
+                x += Width;
             }
         }
 
