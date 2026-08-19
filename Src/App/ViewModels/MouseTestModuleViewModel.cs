@@ -164,10 +164,12 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     {
         _dispatcher.Invoke(() =>
         {
-            LogLines.Add(message.LogLine);
+            // Newest first: insert at the top so the latest click/scroll is
+            // immediately visible without scrolling.
+            LogLines.Insert(0, message.LogLine);
             if (LogLines.Count > 500)
             {
-                LogLines.RemoveAt(0);
+                LogLines.RemoveAt(LogLines.Count - 1);
             }
 
             LeftClicks = message.LeftClicks;

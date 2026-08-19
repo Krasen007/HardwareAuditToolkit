@@ -20,10 +20,10 @@ namespace HardwareAuditToolkit.App.Modules;
 /// Pass criteria = operator confirmation ("all buttons/scroll/tracing work")
 /// becomes <see cref="TestStatus.Passed"/>; flagging a defect becomes
 /// <see cref="TestStatus.Failed"/>. A drag that moves beyond the click threshold
-/// is logged distinctly from a click, so an early release mid-drag is clearly
-/// flagged. Unplugging the mouse mid-test is handled gracefully (§9.5): raw
-/// input simply stops, and a disconnect while a button is held is recorded as an
-/// incomplete drag/drop finding rather than freezing the module.
+/// is logged distinctly from a click — its release is reported as the completed
+/// drag, not as a click. Unplugging the mouse mid-test is handled gracefully
+/// (§9.5): raw input simply stops, and a disconnect while a button is held is
+/// recorded as an incomplete drag/drop finding rather than freezing the module.
 /// </para>
 /// </summary>
 public sealed class MouseTestModule : ITestModule
@@ -238,15 +238,11 @@ public sealed class MouseTestModule : ITestModule
             return;
         }
 
-        // Button transitions (possibly several in one sample).
-        if (sample.IsButtonEvent)
-        {
-            HandleButton(ButtonId.Left, sample.Buttons.HasFlag(MouseButtonChanges.LeftDown), sample.Buttons.HasFlag(MouseButtonChanges.LeftUp), sample);
-            HandleButton(ButtonId.Right, sample.Buttons.HasFlag(MouseButtonChanges.RightDown), sample.Buttons.HasFlag(MouseButtonChanges.RightUp), sample);
-            HandleButton(ButtonId.Middle, sample.Buttons.HasFlag(MouseButtonChanges.MiddleDown), sample.Buttons.HasFlag(MouseButtonChanges.MiddleUp), sample);
-        }
-
-        // Movement while any button is held accumulates drag distance.
+        // Movement while any button is held accumulates drag distance. This must
+        // run BEFORE the button handling: a single raw sample can carry both the
+        // final movement and the release, and the release has to be classified
+        // against the distance already accumulated — otherwise a drag that ends
+        // in the same sample as its last move would be misreported as a click.
         if (sample.HasMovement)
         {
             lock (_gate)
@@ -268,6 +264,14 @@ public sealed class MouseTestModule : ITestModule
                     }
                 }
             }
+        }
+
+        // Button transitions (possibly several in one sample).
+        if (sample.IsButtonEvent)
+        {
+            HandleButton(ButtonId.Left, sample.Buttons.HasFlag(MouseButtonChanges.LeftDown), sample.Buttons.HasFlag(MouseButtonChanges.LeftUp), sample);
+            HandleButton(ButtonId.Right, sample.Buttons.HasFlag(MouseButtonChanges.RightDown), sample.Buttons.HasFlag(MouseButtonChanges.RightUp), sample);
+            HandleButton(ButtonId.Middle, sample.Buttons.HasFlag(MouseButtonChanges.MiddleDown), sample.Buttons.HasFlag(MouseButtonChanges.MiddleUp), sample);
         }
     }
 
@@ -293,13 +297,16 @@ public sealed class MouseTestModule : ITestModule
             }
             else
             {
-                // Release.
+                // Release ends the interaction. A held drag that crossed the
+                // threshold is a completed drag-and-drop; anything below it is a
+                // click. (No "mid-drag drop" alarm — the release IS the normal
+                // end of a drag.)
                 string result;
                 if (state.DragStarted)
                 {
                     double dist = state.Distance;
                     var ms = (DateTime.UtcNow - state.DownAt).TotalMilliseconds;
-                    result = $"drag: {dist:0} px over {ms:0} ms (released mid-drag — drop detected)";
+                    result = $"drag: {dist:0} px over {ms:0} ms";
                 }
                 else
                 {

@@ -98,6 +98,52 @@ public class MouseModuleTests
     }
 
     [Fact]
+    public void Module_ReleaseInSameSampleAsFinalMovement_StillADrag()
+    {
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("mouse", out _));
+
+        // Hold left and move past the threshold, then release in the SAME raw
+        // sample that carries the last movement — the movement must be counted
+        // before the release is classified, or this would be reported as a click.
+        fake.Raise(new RawMouseSample { Buttons = MouseButtonChanges.LeftDown });
+        for (int i = 0; i < 20; i++)
+        {
+            fake.Raise(new RawMouseSample { DeltaX = 15, DeltaY = 0 });
+        }
+
+        fake.Raise(new RawMouseSample
+        {
+            Buttons = MouseButtonChanges.LeftUp,
+            DeltaX = 20,
+            DeltaY = 0,
+        });
+
+        Assert.Equal(1, module.DragCount);
+        Assert.Equal(0, module.LeftClicks);
+
+        orchestrator.CancelModule("mouse");
+        Assert.True(fake.Stopped);
+    }
+
+    [Fact]
+    public void Module_ReleaseInSameSampleAsMovementBelowThreshold_StillAClick()
+    {
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("mouse", out _));
+
+        // A click whose release sample carries a tiny movement stays a click.
+        fake.Raise(new RawMouseSample { Buttons = MouseButtonChanges.LeftDown });
+        fake.Raise(new RawMouseSample { Buttons = MouseButtonChanges.LeftUp, DeltaX = 3, DeltaY = 2 });
+
+        Assert.Equal(0, module.DragCount);
+        Assert.Equal(1, module.LeftClicks);
+
+        orchestrator.CancelModule("mouse");
+        Assert.True(fake.Stopped);
+    }
+
+    [Fact]
     public void Module_FlagDefect_Failed()
     {
         var module = BuildModule(out var fake, out var orchestrator);

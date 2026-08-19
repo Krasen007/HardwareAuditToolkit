@@ -45,10 +45,16 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Click / scroll / drag log"
                                FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" Margin="0,0,0,8" />
-                    <ListBox ItemsSource="{Binding LogLines}"
-                             Background="Transparent" BorderThickness="0"
-                             Foreground="#D8D8D8" FontSize="12"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    <!-- Read-only log: ItemsControl has no selection, no focus,
+                         no scrollbars, and cannot be hit-tested — the newest
+                         entry stays pinned at the top. Wheel detection is raw
+                         input, unaffected by this UI. -->
+                    <ItemsControl ItemsSource="{Binding LogLines}"
+                                  Background="Transparent"
+                                  Foreground="#D8D8D8" FontSize="12"
+                                  IsHitTestVisible="False"
+                                  Focusable="False"
+                                  ClipToBounds="True" />
                 </DockPanel>
             </Border>
 
