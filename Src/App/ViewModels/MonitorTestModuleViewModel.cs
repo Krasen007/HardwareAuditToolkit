@@ -32,6 +32,9 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
     private bool _suppressBrightness;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(StartTestCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ConfirmCommand))]
+    [NotifyCanExecuteChangedFor(nameof(FlagDefectCommand))]
     private bool _isRunning;
 
     [ObservableProperty]

@@ -86,18 +86,12 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Routed through the orchestrator so any running module is cancelled cleanly
-    /// before the app closes (§4, §6).
+    /// Global exit paths (Ctrl+E, Exit Test button) cancel any running module
+    /// and return to the dashboard (§6). Only the native window close (X) quits
+    /// the application.
     /// </summary>
     private void HandleExitRequested()
     {
-        if (_exitInitiated)
-        {
-            return;
-        }
-
-        _exitInitiated = true;
-
         if (_services is null)
         {
             Shutdown();
@@ -105,20 +99,19 @@ public partial class App : Application
         }
 
         var orchestrator = _services.GetRequiredService<TestOrchestrator>();
-        orchestrator.CancelAll();
+        var navigation = _services.GetRequiredService<INavigationService>();
 
-        var session = _services.GetRequiredService<AuditSession>();
-        if (session.CompletedAt is null)
+        if (orchestrator.CurrentExclusiveModule is not null || orchestrator.RunningModules.Count > 0)
         {
-            session.CompletedAt = DateTime.UtcNow;
+            orchestrator.CancelAll();
         }
 
-        Shutdown();
+        navigation.NavigateToDashboard();
     }
 
     /// <summary>
-    /// Native window close (X) routes through the same exit flow as Ctrl+E and
-    /// the Exit button (§6). The guard prevents reentrancy once shutdown begins.
+    /// Native window close (X) is the actual app-quit path (§6). It cancels any
+    /// running module, stamps the session, and shuts down.
     /// </summary>
     private void OnMainWindowClosing(object? sender, CancelEventArgs e)
     {
@@ -127,8 +120,19 @@ public partial class App : Application
             return;
         }
 
+        _exitInitiated = true;
         e.Cancel = true;
-        WeakReferenceMessenger.Default.Send(new ExitRequestedMessage());
+
+        var orchestrator = _services?.GetRequiredService<TestOrchestrator>();
+        orchestrator?.CancelAll();
+
+        var session = _services?.GetRequiredService<AuditSession>();
+        if (session is not null && session.CompletedAt is null)
+        {
+            session.CompletedAt = DateTime.UtcNow;
+        }
+
+        Shutdown();
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -164,6 +168,10 @@ public partial class App : Application
         services.AddSingleton<IDdcCiControl, DdcCiControl>();
         services.AddSingleton<MonitorTestModule>();
         services.AddSingleton<ITestModule>(sp => sp.GetRequiredService<MonitorTestModule>());
+
+        // Phase 6 — dashboard view model (resolved via DI so its ReportExportService
+        // dependency is satisfied when NavigationService navigates to it).
+        services.AddTransient<DashboardViewModel>();
 
         // Phase 2 — module screen view models. NavigationService resolves these per
         // navigation, and each instance registers event-bus subscriptions in its

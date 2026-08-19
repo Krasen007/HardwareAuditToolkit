@@ -3,6 +3,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HardwareAuditToolkit.App.Services;
+using HardwareAuditToolkit.App.Views;
 using HardwareAuditToolkit.Core.Reporting;
 
 namespace HardwareAuditToolkit.App.ViewModels;
@@ -38,12 +39,7 @@ public sealed partial class DashboardViewModel(INavigationService navigation, Re
         ReportExportResult result = _reportExport.Export();
         if (result.Success)
         {
-            string where = result.JsonPath ?? "clipboard";
-            MessageBox.Show(
-                $"Audit report exported.\nJSON: {where}\nHTML: {result.HtmlPath ?? where}",
-                "Export",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            Views.ExportResultDialog.ShowResult(result);
         }
         else
         {

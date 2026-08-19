@@ -32,6 +32,9 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
     private readonly Stopwatch _wpmStopwatch = new();
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(StartTestCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ConfirmCommand))]
+    [NotifyCanExecuteChangedFor(nameof(FlagDefectCommand))]
     private bool _isRunning;
 
     [ObservableProperty]

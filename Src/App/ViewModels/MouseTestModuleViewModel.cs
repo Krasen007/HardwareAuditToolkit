@@ -36,6 +36,9 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     private readonly List<Point> _targetPoints = new();
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(StartTestCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ConfirmCommand))]
+    [NotifyCanExecuteChangedFor(nameof(FlagDefectCommand))]
     private bool _isRunning;
 
     [ObservableProperty]

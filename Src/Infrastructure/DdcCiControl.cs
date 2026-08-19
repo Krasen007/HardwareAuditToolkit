@@ -22,6 +22,13 @@ public sealed class DdcCiControl : IDdcCiControl
 {
     private const byte VcpBrightness = 0x10;
 
+    // Probed once: some systems ship a dxva2.dll that lacks the VCP/physical-monitor
+    // entry points entirely. Rather than let the binder throw EntryPointNotFoundException
+    // (which would surface as a crash even though DDC/CI is meant to degrade gracefully),
+    // we detect availability up front and short-circuit to "unsupported" (architecture §10
+    // Phase 5, DoD: DDC/CI reports "unsupported" cleanly where not present).
+    private static readonly Lazy<bool> _apiAvailable = new(ProbeApiAvailable);
+
     private static readonly MonitorEnumDelegate MonitorEnumCallback = MonitorEnumProc;
 
     public IReadOnlyList<MonitorInfo> EnumerateMonitors()
@@ -85,6 +92,11 @@ public sealed class DdcCiControl : IDdcCiControl
 
     public BrightnessReading GetBrightness(int index)
     {
+        if (!_apiAvailable.Value)
+        {
+            return new BrightnessReading { Supported = false, Detail = "DDC/CI API not available on this system." };
+        }
+
         IntPtr hmonitor = GetHmonitor(index);
         if (hmonitor == IntPtr.Zero)
         {
@@ -92,7 +104,7 @@ public sealed class DdcCiControl : IDdcCiControl
         }
 
         var pm = new PHYSICAL_MONITOR[1];
-        if (!GetPhysicalMonitorsFromHMONITOR(hmonitor, 1, pm))
+        if (!GetPhysicalMonitorsFromHMONITOR(hmonitor, 1, pm) || pm[0].hPhysicalMonitor == IntPtr.Zero)
         {
             return new BrightnessReading { Supported = false, Detail = "DDC/CI not available (no physical monitor handle; may be disabled in OSD)." };
         }
@@ -125,6 +137,11 @@ public sealed class DdcCiControl : IDdcCiControl
 
     public bool SetBrightness(int index, int value)
     {
+        if (!_apiAvailable.Value)
+        {
+            return false;
+        }
+
         IntPtr hmonitor = GetHmonitor(index);
         if (hmonitor == IntPtr.Zero)
         {
@@ -132,7 +149,7 @@ public sealed class DdcCiControl : IDdcCiControl
         }
 
         var pm = new PHYSICAL_MONITOR[1];
-        if (!GetPhysicalMonitorsFromHMONITOR(hmonitor, 1, pm))
+        if (!GetPhysicalMonitorsFromHMONITOR(hmonitor, 1, pm) || pm[0].hPhysicalMonitor == IntPtr.Zero)
         {
             return false;
         }
@@ -149,6 +166,31 @@ public sealed class DdcCiControl : IDdcCiControl
         finally
         {
             DestroyPhysicalMonitors(1, pm);
+        }
+    }
+
+    private static bool ProbeApiAvailable()
+    {
+        try
+        {
+            IntPtr lib = LoadLibrary("dxva2.dll");
+            if (lib == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            bool ok =
+                GetProcAddress(lib, "GetPhysicalMonitorsFromHMONITOR") != IntPtr.Zero &&
+                GetProcAddress(lib, "DestroyPhysicalMonitors") != IntPtr.Zero &&
+                GetProcAddress(lib, "GetVCPFeature") != IntPtr.Zero &&
+                GetProcAddress(lib, "SetVCPFeature") != IntPtr.Zero;
+
+            FreeLibrary(lib);
+            return ok;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -238,12 +280,12 @@ public sealed class DdcCiControl : IDdcCiControl
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    private sealed class PHYSICAL_MONITOR
+    private struct PHYSICAL_MONITOR
     {
         public IntPtr hPhysicalMonitor;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-        public string szPhysicalMonitorDescription = string.Empty;
+        public string szPhysicalMonitorDescription;
     }
 
     private delegate bool MonitorEnumDelegate(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
@@ -270,4 +312,14 @@ public sealed class DdcCiControl : IDdcCiControl
     [DllImport("dxva2.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetVCPFeature(IntPtr hPhysicalMonitor, byte bVCPCode, uint dwNewValue);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr LoadLibrary(string lpLibFileName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool FreeLibrary(IntPtr hModule);
 }

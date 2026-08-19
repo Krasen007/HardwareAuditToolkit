@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.App.Messages;
 using HardwareAuditToolkit.App.Services;
+using HardwareAuditToolkit.App.Views;
 using HardwareAuditToolkit.Core.Reporting;
 using System.Windows;
 
@@ -51,12 +52,7 @@ public sealed partial class ShellViewModel : ObservableObject
         ReportExportResult result = _reportExport.Export();
         if (result.Success)
         {
-            string where = result.JsonPath ?? "clipboard";
-            MessageBox.Show(
-                $"Audit report exported.\nJSON: {where}\nHTML: {result.HtmlPath ?? where}",
-                "Export",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            Views.ExportResultDialog.ShowResult(result);
         }
         else
         {
