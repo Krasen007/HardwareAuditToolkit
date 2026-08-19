@@ -28,7 +28,10 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     private const int WmInput = 0x00FF;
     private const int WmQuit = 0x0012;
     private const int RidInput = 0x10000003;
-    private const int RimTypemouse = 2;
+    // RIM_TYPEMOUSE == 0 (RIM_TYPEKEYBOARD == 1, RIM_TYPEHID == 2). Using the
+    // HID constant here would reject every mouse event at the type check, so
+    // clicks/scroll would never be parsed.
+    private const int RimTypemouse = 0;
     private const int RidevInputSink = 0x100;
     private const int RidevRemove = 0x00000001;
 
@@ -298,12 +301,17 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
         public IntPtr wParam;
     }
 
+    // Native RAWMOUSE: USHORT usFlags @0, then a union (ULONG-aligned) at @4
+    // with usButtonFlags @4 / usButtonData @6. The union's 4-byte alignment
+    // pushes the button fields to @4/@6 — reading them at @2/@4 (as if there
+    // were no padding) yields zero flags, so button/wheel events are never
+    // detected.
     [StructLayout(LayoutKind.Explicit)]
     private struct Rawmouse
     {
         [FieldOffset(0)] public ushort usFlags;
-        [FieldOffset(2)] public ushort usButtonFlags;
-        [FieldOffset(4)] public ushort usButtonData;
+        [FieldOffset(4)] public ushort usButtonFlags;
+        [FieldOffset(6)] public ushort usButtonData;
         [FieldOffset(8)] public uint ulRawButtons;
         [FieldOffset(12)] public int lLastX;
         [FieldOffset(16)] public int lLastY;

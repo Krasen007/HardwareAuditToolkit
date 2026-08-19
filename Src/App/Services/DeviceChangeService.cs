@@ -29,7 +29,8 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
     private const int RidevDevnotify = 0x2000;
     private const int RidevInputSink = 0x100;
     private const int RimTypekeyboard = 1;
-    private const int RimTypemouse = 2;
+    // RIM_TYPEMOUSE == 0 (RIM_TYPEKEYBOARD == 1, RIM_TYPEHID == 2).
+    private const int RimTypemouse = 0;
     private const int SmCMonitors = 80;
 
     private HwndSource? _hwndSource;

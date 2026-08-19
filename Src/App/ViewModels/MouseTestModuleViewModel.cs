@@ -88,7 +88,20 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
 
     public PointCollection TraceTargetPoints { get; }
 
-    public PointCollection TracePoints { get; }
+    // The trace polyline binds to this. WPF's Polyline caches its geometry from
+    // the Points collection and does NOT observe collection mutations, so the
+    // collection instance must be REPLACED (raising PropertyChanged) whenever
+    // points are added — only a dependency-property change rebuilds the shape.
+    private PointCollection _tracePoints = new();
+    public PointCollection TracePoints
+    {
+        get => _tracePoints;
+        private set
+        {
+            _tracePoints = value;
+            OnPropertyChanged();
+        }
+    }
 
     /// <summary>True while the operator is actively tracing (button held on the canvas).</summary>
     public bool IsTracing { get; private set; }
@@ -264,7 +277,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     private void ToggleTrace()
     {
         IsTraceMode = !IsTraceMode;
-        TracePoints.Clear();
+        TracePoints = new PointCollection();
         TraceResultText = string.Empty;
         _tracedPoints.Clear();
     }
@@ -281,7 +294,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
 
         IsTracing = true;
         _tracedPoints.Clear();
-        TracePoints.Clear();
+        TracePoints = new PointCollection();
         AddTrace(x, y);
     }
 
@@ -294,7 +307,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
         }
 
         _tracedPoints.Add(new Point(x, y));
-        TracePoints.Add(new Point(x, y));
+        TracePoints = new PointCollection(_tracedPoints);
     }
 
     /// <summary>Ends a trace stroke and scores coverage (called on canvas mouse-up).</summary>
