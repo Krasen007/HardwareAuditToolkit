@@ -1,8 +1,8 @@
-namespace HardwareAuditToolkit.App.Messages;
+namespace HardwareAuditToolkit.Core.Messages;
 
 /// <summary>
-/// Published by <see cref="HardwareAuditToolkit.App.Services.DeviceChangeService"/>
-/// whenever a keyboard/mouse arrives/leaves or the display topology changes (§9.5).
+/// Published by the App device-change service whenever a keyboard/mouse
+/// arrives/leaves or the display topology changes (§9.5).
 /// </summary>
 public sealed class DeviceTopologyChangedMessage
 {

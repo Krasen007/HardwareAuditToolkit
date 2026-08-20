@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using HardwareAuditToolkit.App.Messages;
+using HardwareAuditToolkit.Core.Messages;
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;
 using CommunityToolkit.Mvvm.Messaging;
 
-namespace HardwareAuditToolkit.App.Modules;
+namespace HardwareAuditToolkit.Core.Modules;
 
 /// <summary>
 /// <para>

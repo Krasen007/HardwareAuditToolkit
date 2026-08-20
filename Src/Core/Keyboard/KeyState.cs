@@ -1,4 +1,4 @@
-namespace HardwareAuditToolkit.App.Keyboard;
+namespace HardwareAuditToolkit.Core.Keyboard;
 
 /// <summary>
 /// Per-key lifecycle state in the keyboard test (architecture §10 Phase 3):

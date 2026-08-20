@@ -10,7 +10,9 @@ full architecture and phase plan.
 ```
 Src/
   HardwareAuditToolkit.sln
-  Core/            # contracts (ITestModule, TestStatus), session models, TestOrchestrator — no UI/Win32 refs
+  Core/            # contracts, session models, orchestrator, event-bus messages,
+                   #   keyboard layout/state, and the Application-layer test modules
+                   #   (no UI; depends on Infrastructure only via interfaces)
   Infrastructure/  # Win32 wrappers, WMI/CIM, LibreHardwareMonitor sensor adapter
   App/             # WPF host: DI shell, single-instance enforcer, app manifest, publish profiles
   Tests/           # xunit

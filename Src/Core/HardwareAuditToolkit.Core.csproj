@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Core: contracts, orchestrator and session models.
-    No UI and no Win32/P-Invoke references by design (architecture §3, §5) —
-    this project stays dependency-free so the orchestrator and models remain
-    trivially unit-testable.
+    Core: contracts, orchestrator, session models, event-bus payloads, keyboard
+    layout, and the Application-layer test modules (ITestModule implementations).
+    No UI and no directly-authored Win32/P-Invoke code (architecture §3, §5):
+    the modules depend on Infrastructure purely through its interfaces, and the
+    in-process event bus is CommunityToolkit's WeakReferenceMessenger (UI-agnostic).
   -->
 
   <PropertyGroup>
@@ -14,5 +15,13 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <RootNamespace>HardwareAuditToolkit.Core</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Infrastructure\HardwareAuditToolkit.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 using HardwareAuditToolkit.Core;
 
-namespace HardwareAuditToolkit.App.Messages;
+namespace HardwareAuditToolkit.Core.Messages;
 
 /// <summary>
 /// Live telemetry broadcast by <see cref="Modules.CpuStressModule"/> while a burn-in

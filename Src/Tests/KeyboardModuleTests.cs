@@ -1,6 +1,6 @@
 using System.Reflection;
-using HardwareAuditToolkit.App.Keyboard;
-using HardwareAuditToolkit.App.Modules;
+using HardwareAuditToolkit.Core.Keyboard;
+using HardwareAuditToolkit.Core.Modules;
 using HardwareAuditToolkit.App.ViewModels;
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;

@@ -1,7 +1,7 @@
-using HardwareAuditToolkit.App.Keyboard;
+using HardwareAuditToolkit.Core.Keyboard;
 using HardwareAuditToolkit.Core;
 
-namespace HardwareAuditToolkit.App.Messages;
+namespace HardwareAuditToolkit.Core.Messages;
 
 /// <summary>
 /// Live per-key update broadcast by <see cref="Modules.KeyboardTestModule"/> as

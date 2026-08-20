@@ -5,9 +5,9 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using HardwareAuditToolkit.App.Keyboard;
-using HardwareAuditToolkit.App.Messages;
-using HardwareAuditToolkit.App.Modules;
+using HardwareAuditToolkit.Core.Keyboard;
+using HardwareAuditToolkit.Core.Messages;
+using HardwareAuditToolkit.Core.Modules;
 using HardwareAuditToolkit.App.Services;
 using HardwareAuditToolkit.Core;
 

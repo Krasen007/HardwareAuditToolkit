@@ -1,4 +1,4 @@
-namespace HardwareAuditToolkit.App.Keyboard;
+namespace HardwareAuditToolkit.Core.Keyboard;
 
 /// <summary>
 /// A single key in the on-screen vector layout. Positions are expressed in

@@ -1,4 +1,4 @@
-namespace HardwareAuditToolkit.App.Messages;
+namespace HardwareAuditToolkit.Core.Messages;
 
 /// <summary>
 /// Monitor test lifecycle/status broadcast (start, confirm, flag, cancel).

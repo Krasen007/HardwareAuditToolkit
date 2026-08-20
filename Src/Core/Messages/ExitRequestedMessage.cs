@@ -1,4 +1,4 @@
-namespace HardwareAuditToolkit.App.Messages;
+namespace HardwareAuditToolkit.Core.Messages;
 
 /// <summary>
 /// Marker message raised by every exit path (Ctrl+E hook, the Exit Test overlay,

@@ -4,9 +4,9 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using HardwareAuditToolkit.App.Messages;
+using HardwareAuditToolkit.Core.Messages;
 using HardwareAuditToolkit.App.Services;
-using HardwareAuditToolkit.App.Modules;
+using HardwareAuditToolkit.Core.Modules;
 using HardwareAuditToolkit.Core;
 
 namespace HardwareAuditToolkit.App.ViewModels;

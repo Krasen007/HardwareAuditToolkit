@@ -2,8 +2,9 @@ using System.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;
+using HardwareAuditToolkit.Core.Messages;
 
-namespace HardwareAuditToolkit.App.Modules;
+namespace HardwareAuditToolkit.Core.Modules;
 
 /// <summary>
 /// <para>

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using CommunityToolkit.Mvvm.Messaging;
-using HardwareAuditToolkit.App.Messages;
+using HardwareAuditToolkit.Core.Messages;
 
 namespace HardwareAuditToolkit.App.Services;
 

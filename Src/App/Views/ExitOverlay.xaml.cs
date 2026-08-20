@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 using CommunityToolkit.Mvvm.Messaging;
-using HardwareAuditToolkit.App.Messages;
+using HardwareAuditToolkit.Core.Messages;
 
 namespace HardwareAuditToolkit.App.Views;
 

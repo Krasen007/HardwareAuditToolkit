@@ -1,7 +1,7 @@
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;
 
-namespace HardwareAuditToolkit.App.Modules;
+namespace HardwareAuditToolkit.Core.Modules;
 
 /// <summary>
 /// <para>

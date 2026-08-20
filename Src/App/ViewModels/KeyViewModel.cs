@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using HardwareAuditToolkit.App.Keyboard;
+using HardwareAuditToolkit.Core.Keyboard;
 
 namespace HardwareAuditToolkit.App.ViewModels;
 

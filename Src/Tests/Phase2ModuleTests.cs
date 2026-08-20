@@ -1,5 +1,5 @@
 using System.Reflection;
-using HardwareAuditToolkit.App.Modules;
+using HardwareAuditToolkit.Core.Modules;
 using HardwareAuditToolkit.App.ViewModels;
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;

@@ -1,7 +1,7 @@
 using HardwareAuditToolkit.Core;
 using HardwareAuditToolkit.Infrastructure;
 
-namespace HardwareAuditToolkit.App.Messages;
+namespace HardwareAuditToolkit.Core.Messages;
 
 /// <summary>
 /// Live per-event update broadcast by <see cref="Modules.MouseTestModule"/> as

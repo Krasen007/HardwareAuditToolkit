@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.Messaging;
-using HardwareAuditToolkit.App.Messages;
-using HardwareAuditToolkit.App.Modules;
+using HardwareAuditToolkit.Core.Messages;
+using HardwareAuditToolkit.Core.Modules;
 using HardwareAuditToolkit.App.Services;
 using HardwareAuditToolkit.App.ViewModels;
 using HardwareAuditToolkit.Core;
