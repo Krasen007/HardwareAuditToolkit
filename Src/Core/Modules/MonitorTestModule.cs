@@ -63,13 +63,13 @@ public sealed class MonitorTestModule : ITestModule
 
     public bool IsRunning => CurrentPhase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
 
-    public IList<ModuleMeasurement> Measurements { get; } = new List<ModuleMeasurement>();
+    public IList<ModuleMeasurement> Measurements { get; } = [];
 
-    public IList<string> Findings { get; } = new List<string>();
+    public IList<string> Findings { get; } = [];
 
-    public IList<string> OperatorActions { get; } = new List<string>();
+    public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = new List<string>();
+    public IList<string> Artifacts { get; } = [];
 
     /// <summary>Currently selected display index (DDC/CI target).</summary>
     public int SelectedMonitorIndex

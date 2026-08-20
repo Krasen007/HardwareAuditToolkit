@@ -24,10 +24,10 @@ public sealed partial class SystemInfoModuleViewModel : ObservableObject, IDispo
     private readonly Dispatcher _dispatcher;
 
     [ObservableProperty]
-    private ObservableCollection<InfoRow> _inventory = new();
+    private ObservableCollection<InfoRow> _inventory = [];
 
     [ObservableProperty]
-    private ObservableCollection<SensorRow> _sensors = new();
+    private ObservableCollection<SensorRow> _sensors = [];
 
     [ObservableProperty]
     private string _statusText = "Collecting inventory…";

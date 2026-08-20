@@ -50,13 +50,13 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
     private string _finalStatusText = string.Empty;
 
     [ObservableProperty]
-    private ObservableCollection<MonitorInfo> _monitors = new();
+    private ObservableCollection<MonitorInfo> _monitors = [];
 
     [ObservableProperty]
     private MonitorInfo? _selectedMonitor;
 
     [ObservableProperty]
-    private ObservableCollection<string> _patterns = new();
+    private ObservableCollection<string> _patterns = [];
 
     [ObservableProperty]
     private string _currentPattern = "Solid — White";

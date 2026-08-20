@@ -29,7 +29,7 @@ public sealed class SystemInfoSnapshot
     public string? SystemModel { get; set; }
 
     /// <summary>"Model — Size" strings for each detected fixed disk.</summary>
-    public List<string> Disks { get; set; } = new();
+    public List<string> Disks { get; set; } = [];
 
     public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
 }

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Management;
 
 namespace HardwareAuditToolkit.Infrastructure;
@@ -46,24 +47,24 @@ public sealed class SystemInfoProvider : IDisposable
         try
         {
             using var searcher = new ManagementObjectSearcher("SELECT Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed FROM Win32_Processor");
-            foreach (ManagementObject obj in searcher.Get())
+            foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
             {
                 s.CpuName ??= obj["Name"]?.ToString()?.Trim();
-                if (s.PhysicalCores is null && obj["NumberOfCores"] is not null)
+                if (s.PhysicalCores is null && obj["NumberOfCores"] is not null &&
+                    int.TryParse(obj["NumberOfCores"].ToString(), out int cores))
                 {
-                    int.TryParse(obj["NumberOfCores"].ToString(), out int cores);
                     s.PhysicalCores = cores;
                 }
 
-                if (s.LogicalProcessors is null && obj["NumberOfLogicalProcessors"] is not null)
+                if (s.LogicalProcessors is null && obj["NumberOfLogicalProcessors"] is not null &&
+                    int.TryParse(obj["NumberOfLogicalProcessors"].ToString(), out int logical))
                 {
-                    int.TryParse(obj["NumberOfLogicalProcessors"].ToString(), out int logical);
                     s.LogicalProcessors = logical;
                 }
 
-                if (s.MaxClockSpeedMhz is null && obj["MaxClockSpeed"] is not null)
+                if (s.MaxClockSpeedMhz is null && obj["MaxClockSpeed"] is not null &&
+                    long.TryParse(obj["MaxClockSpeed"].ToString(), out long mhz))
                 {
-                    long.TryParse(obj["MaxClockSpeed"].ToString(), out long mhz);
                     s.MaxClockSpeedMhz = mhz;
                 }
             }
@@ -79,7 +80,7 @@ public sealed class SystemInfoProvider : IDisposable
         try
         {
             using var searcher = new ManagementObjectSearcher("SELECT TotalPhysicalMemory, Manufacturer, Model FROM Win32_ComputerSystem");
-            foreach (ManagementObject obj in searcher.Get())
+            foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
             {
                 if (obj["TotalPhysicalMemory"] is not null &&
                     ulong.TryParse(obj["TotalPhysicalMemory"].ToString(), out ulong bytes))
@@ -102,7 +103,7 @@ public sealed class SystemInfoProvider : IDisposable
         try
         {
             using var searcher = new ManagementObjectSearcher("SELECT Caption, OSArchitecture FROM Win32_OperatingSystem");
-            foreach (ManagementObject obj in searcher.Get())
+            foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
             {
                 s.OperatingSystem ??= obj["Caption"]?.ToString()?.Trim();
                 s.OsArchitecture ??= obj["OSArchitecture"]?.ToString()?.Trim();
@@ -119,7 +120,7 @@ public sealed class SystemInfoProvider : IDisposable
         try
         {
             using var bios = new ManagementObjectSearcher("SELECT SMBIOSBIOSVersion, Manufacturer FROM Win32_BIOS");
-            foreach (ManagementObject obj in bios.Get())
+            foreach (ManagementObject obj in bios.Get().Cast<ManagementObject>())
             {
                 s.BiosVersion ??= obj["SMBIOSBIOSVersion"]?.ToString()?.Trim();
                 s.BiosManufacturer ??= obj["Manufacturer"]?.ToString()?.Trim();
@@ -133,7 +134,7 @@ public sealed class SystemInfoProvider : IDisposable
         try
         {
             using var board = new ManagementObjectSearcher("SELECT Product, Manufacturer FROM Win32_BaseBoard");
-            foreach (ManagementObject obj in board.Get())
+            foreach (ManagementObject obj in board.Get().Cast<ManagementObject>())
             {
                 var product = obj["Product"]?.ToString()?.Trim();
                 var manufacturer = obj["Manufacturer"]?.ToString()?.Trim();
@@ -154,7 +155,7 @@ public sealed class SystemInfoProvider : IDisposable
         try
         {
             using var searcher = new ManagementObjectSearcher("SELECT Model, Size, MediaType FROM Win32_DiskDrive WHERE MediaType LIKE '%Fixed%'");
-            foreach (ManagementObject obj in searcher.Get())
+            foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
             {
                 var model = obj["Model"]?.ToString()?.Trim() ?? "Unknown disk";
                 string? size = null;
