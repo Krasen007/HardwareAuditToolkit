@@ -32,8 +32,8 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     private readonly MouseTestModule _module;
     private readonly Dispatcher _dispatcher;
 
-    private readonly List<Point> _tracedPoints = new();
-    private readonly List<Point> _targetPoints = new();
+    private readonly List<Point> _tracedPoints = [];
+    private readonly List<Point> _targetPoints = [];
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartTestCommand))]
@@ -92,7 +92,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     // the Points collection and does NOT observe collection mutations, so the
     // collection instance must be REPLACED (raising PropertyChanged) whenever
     // points are added — only a dependency-property change rebuilds the shape.
-    private PointCollection _tracePoints = new();
+    private PointCollection _tracePoints = [];
     public PointCollection TracePoints
     {
         get => _tracePoints;
@@ -106,8 +106,8 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     /// <summary>True while the operator is actively tracing (button held on the canvas).</summary>
     public bool IsTracing { get; private set; }
 
-    public double TraceCanvasWidth => TraceWidth;
-    public double TraceCanvasHeight => TraceHeight;
+    public static double TraceCanvasWidth => TraceWidth;
+    public static double TraceCanvasHeight => TraceHeight;
 
     public MouseTestModuleViewModel(
         INavigationService navigation,
@@ -119,16 +119,16 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
         _module = module;
         _dispatcher = Application.Current.Dispatcher;
 
-        LogLines = new ObservableCollection<string>();
+        LogLines = [];
         (TraceTargetPoints, _targetPoints) = BuildTraceTarget();
-        TracePoints = new PointCollection();
+        TracePoints = [];
 
         WeakReferenceMessenger.Default.Register<MouseEventMessage>(this, OnMouseEvent);
         WeakReferenceMessenger.Default.Register<MouseTestStatusMessage>(this, OnStatus);
         WeakReferenceMessenger.Default.Register<DeviceTopologyChangedMessage>(this, OnDeviceTopology);
     }
 
-    private (PointCollection, List<Point>) BuildTraceTarget()
+    private static (PointCollection, List<Point>) BuildTraceTarget()
     {
         // A recognizable duck silhouette in the fixed tracing coordinate space.
         // Sampled as evenly spaced target points for coverage scoring.
@@ -144,14 +144,13 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
         var collection = new PointCollection();
         for (int i = 0; i < waypoints.Length - 1; i++)
         {
-            var a = waypoints[i];
-            var b = waypoints[i + 1];
-            double segLen = Math.Sqrt((b.X - a.X) * (b.X - a.X) + (b.Y - a.Y) * (b.Y - a.Y));
+            var (a, b) = (waypoints[i], waypoints[i + 1]);
+            double segLen = Math.Sqrt(((b.X - a.X) * (b.X - a.X)) + ((b.Y - a.Y) * (b.Y - a.Y)));
             int steps = Math.Max(1, (int)Math.Ceiling(segLen / 8.0));
             for (int s = 0; s < steps; s++)
             {
                 double t = (double)s / steps;
-                var p = new Point(a.X + (b.X - a.X) * t, a.Y + (b.Y - a.Y) * t);
+                var p = new Point(a.X + ((b.X - a.X) * t), a.Y + ((b.Y - a.Y) * t));
                 points.Add(p);
                 collection.Add(p);
             }
@@ -279,7 +278,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     private void ToggleTrace()
     {
         IsTraceMode = !IsTraceMode;
-        TracePoints = new PointCollection();
+        TracePoints = [];
         TraceResultText = string.Empty;
         _tracedPoints.Clear();
     }
@@ -296,7 +295,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
 
         IsTracing = true;
         _tracedPoints.Clear();
-        TracePoints = new PointCollection();
+        TracePoints = [];
         AddTrace(x, y);
     }
 
@@ -309,7 +308,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
         }
 
         _tracedPoints.Add(new Point(x, y));
-        TracePoints = new PointCollection(_tracedPoints);
+        TracePoints = [.. _tracedPoints];
     }
 
     /// <summary>Ends a trace stroke and scores coverage (called on canvas mouse-up).</summary>
@@ -329,7 +328,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
             {
                 double dx = p.X - target.X;
                 double dy = p.Y - target.Y;
-                if (dx * dx + dy * dy <= TraceTolerance * TraceTolerance)
+                if ((dx * dx) + (dy * dy) <= TraceTolerance * TraceTolerance)
                 {
                     covered++;
                     break;

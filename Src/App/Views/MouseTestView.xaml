@@ -70,7 +70,7 @@
                                Foreground="#9AE6B0" Margin="0,0,0,8" />
                     <Viewbox Stretch="Uniform" HorizontalAlignment="Center">
                         <Canvas x:Name="TraceCanvas"
-                                Width="{Binding TraceCanvasWidth}" Height="{Binding TraceCanvasHeight}"
+                                 Width="{x:Static vm:MouseTestModuleViewModel.TraceCanvasWidth}" Height="{x:Static vm:MouseTestModuleViewModel.TraceCanvasHeight}"
                                 Background="#1B1B1C"
                                 MouseDown="TraceCanvas_MouseDown"
                                 MouseMove="TraceCanvas_MouseMove"
