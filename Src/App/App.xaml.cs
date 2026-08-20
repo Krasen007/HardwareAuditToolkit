@@ -24,6 +24,7 @@ public partial class App : Application
     private SingleInstanceEnforcer? _singleInstance;
     private ExitHotkeyService? _exitHotkey;
     private DeviceChangeService? _deviceChange;
+    private readonly IDiagnosticLog _diag = new FileDiagnosticLog();
     private bool _exitInitiated;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -32,7 +33,7 @@ public partial class App : Application
 
         // Phase 7 — last-resort fault containment: a single failing call must
         // degrade to "unavailable" rather than crash the audit (architecture §9.7).
-        WireGlobalFaultHandlers();
+        WireGlobalFaultHandlers(_diag);
 
         // §9.1 — point the single-file extraction directory at a predictable
         // path so security teams can allow-list one location. Best-effort,
@@ -96,22 +97,20 @@ public partial class App : Application
     /// their source; here we keep the WPF/UI thread alive on an unhandled exception
     /// and log every other failure so a fault is never silent (architecture §9.7).
     /// </summary>
-    private static void WireGlobalFaultHandlers()
+    private static void WireGlobalFaultHandlers(IDiagnosticLog log)
     {
         Application.Current.DispatcherUnhandledException += (_, e) =>
         {
-            Debug.WriteLine($"HardwareAuditToolkit: unhandled UI exception (app kept alive) — {e.Exception}");
+            log.Write($"unhandled UI exception (app kept alive) — {e.Exception}");
             e.Handled = true;
         };
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-        {
-            Debug.WriteLine($"HardwareAuditToolkit: unhandled exception — {e.ExceptionObject}");
-        };
+            log.Write($"unhandled exception — {e.ExceptionObject}");
 
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            Debug.WriteLine($"HardwareAuditToolkit: unobserved task exception — {e.Exception}");
+            log.Write($"unobserved task exception — {e.Exception}");
             e.SetObserved();
         };
     }
@@ -156,6 +155,7 @@ public partial class App : Application
 
         var orchestrator = _services?.GetRequiredService<TestOrchestrator>();
         orchestrator?.CancelAll();
+        orchestrator?.CheckpointSession();
 
         var session = _services?.GetRequiredService<AuditSession>();
         if (session is not null && session.CompletedAt is null)
@@ -172,6 +172,8 @@ public partial class App : Application
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<DeviceChangeService>();
         services.AddSingleton<ExitHotkeyService>();
+        // Phase 7 — one shared, file-backed diagnostics sink for all fault-guard paths.
+        services.AddSingleton<IDiagnosticLog, FileDiagnosticLog>();
         services.AddSingleton<INavigationService, NavigationService>();
 
         // Phase 2 — providers and modules.
@@ -223,6 +225,9 @@ public partial class App : Application
             StartedAt = DateTime.UtcNow,
         };
         services.AddSingleton(session);
+        // Phase 7 — crash persistence: durable JSON checkpoints are written after each
+        // module completes and on app exit, so a forced termination can't lose findings.
+        services.AddSingleton<ISessionCheckpointStore, SessionCheckpointStore>();
         services.AddSingleton<TestOrchestrator>();
 
         // Phase 6 — reporting: pure exporter (Core) + WPF-bound export service (App).

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.Core.Messages;
+using HardwareAuditToolkit.Infrastructure;
 
 namespace HardwareAuditToolkit.App.Services;
 
@@ -34,6 +35,16 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
 
     private HwndSource? _hwndSource;
     private bool _disposed;
+    private readonly IDiagnosticLog? _log;
+
+    public DeviceChangeService() : this(null)
+    {
+    }
+
+    public DeviceChangeService(IDiagnosticLog? log)
+    {
+        _log = log;
+    }
 
     private int _keyboardCount;
     private int _mouseCount;
@@ -125,7 +136,7 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
             {
                 // A failure here must not kill the message-only window's thread
                 // (that would end the whole process). Contain and keep listening.
-                Debug.WriteLine($"DeviceChangeService: WM_INPUT_DEVICE_CHANGE handling threw — {ex}");
+                _log?.Write($"DeviceChangeService: WM_INPUT_DEVICE_CHANGE handling threw — {ex}");
             }
 
             handled = true;
@@ -142,7 +153,7 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"DeviceChangeService: WM_DISPLAYCHANGE handling threw — {ex}");
+                _log?.Write($"DeviceChangeService: WM_DISPLAYCHANGE handling threw — {ex}");
             }
 
             handled = true;

@@ -56,6 +56,7 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     private int _captureThreadId;
     private readonly ManualResetEventSlim _ready = new(false);
     private bool _disposed;
+    private readonly IDiagnosticLog? _log;
 
     // Owned exclusively by the capture thread — never touched from another thread.
     // ThreadStatic so a stop→start restart cannot have a still-tearing-down old
@@ -69,6 +70,15 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     private WndProc? _wndProc; // referenced for the lifetime of the window
 
     public event EventHandler<RawMouseSample>? MouseReceived;
+
+    public RawMouseInput() : this(null)
+    {
+    }
+
+    public RawMouseInput(IDiagnosticLog? log)
+    {
+        _log = log;
+    }
 
     public void Start()
     {
@@ -261,7 +271,7 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"RawMouseInput: subscriber threw; sample dropped — {ex}");
+                _log?.Write($"RawMouseInput: subscriber threw; sample dropped — {ex}");
             }
         }
         finally

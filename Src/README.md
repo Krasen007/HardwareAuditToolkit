@@ -111,11 +111,21 @@ Outputs land in `Src\App\bin\publish\`.
    a background thread — the CPU-stress workers, the raw keyboard/mouse capture threads,
    the Ctrl+E hook thread, and the device-change message-only window — degrades to
    "unavailable"/`Failed` instead of terminating the process; and per-call best-effort
-   degradation in the WMI/DDC-CI/sensor providers. 55 tests pass, now including App-layer
-   coverage (`ReportExportServiceTests` for the §9.6 cascade and `NavigationServiceTests`
-   for the module-id → view-model routing + placeholder fallback). **Manual pre-ship items
-   remain (cannot be satisfied in code):** Authenticode code-signing via the org PKI (§9.1),
-   an EDR pass (e.g. Microsoft Defender for Endpoint) before wide rollout, and a manual walk
+   degradation in the WMI/DDC-CI/sensor providers. **Diagnostics are now observable on a
+   published build**: every fault path logs to `%LOCALAPPDATA%\HardwareAuditToolkit\diagnostics.log`
+   via `IDiagnosticLog`/`FileDiagnosticLog` (never throws), injected into `App.xaml.cs`,
+   `RawKeyboardInput`, `RawMouseInput`, `ExitHotkeyService`, and `DeviceChangeService` — so the
+   §9.7 "a fault is never silent" claim holds without a debugger attached. **Crash persistence**:
+   `TestOrchestrator` writes a durable JSON checkpoint (`ISessionCheckpointStore`/`SessionCheckpointStore`
+   under `%LOCALAPPDATA%\HardwareAuditToolkit`) after every module completes and on app exit, so a
+   forced termination can't lose findings before an explicit export. **Export correctness**:
+   `ReportExportService.Export()` only stamps `CompletedAt` once a durable export actually lands.
+   60 tests pass, including App-layer coverage (`ReportExportServiceTests`, `NavigationServiceTests`),
+   the CPU fault-injection test (`CpuStressFaultInjectionTests`), and checkpoint tests
+   (`OrchestratorCheckpointTests`, `SessionCheckpointTests`). An opt-in `VerifySingleFileArtifact`
+   publish target asserts the single-file build produces exactly one `.exe` (§9.1). **Manual
+   pre-ship items remain (cannot be satisfied in code):** Authenticode code-signing via the org PKI
+   (§9.1), an EDR pass (e.g. Microsoft Defender for Endpoint) before wide rollout, and a manual walk
    of every exit path from every screen, including mid-CPU-stress.
 
 ---
@@ -123,7 +133,7 @@ Outputs land in `Src\App\bin\publish\`.
 ## Recent code-quality cleanup & decisions
 
 A pass resolved every open analyzer diagnostic (IDE / CA / Roslynator / SYSLIB) so
-the solution builds with **zero warnings, zero errors** (55 xunit tests passing).
+the solution builds with **zero warnings, zero errors** (60 xunit tests passing).
 The style rules applied are now the project's house style:
 
 - **Collection expressions** — target-typed `[]` / `[...]` in place of

@@ -27,10 +27,13 @@ namespace HardwareAuditToolkit.Core.Modules;
 /// <see cref="TestStatus.Cancelled"/> (architecture §4).
 /// </para>
 /// </summary>
-public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
+public sealed class CpuStressModule : ITestModule
 {
     public const int DefaultDurationSeconds = 300; // §8 conservative fixed cap.
 
+    private readonly ISensorProvider _sensors;
+    private readonly Action<CancellationToken> _workerBody;
+    private readonly IDiagnosticLog? _log;
     private readonly object _gate = new();
     private Action<TestStatus>? _onComplete;
     private Thread[] _workers = [];
@@ -39,6 +42,25 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
     private DateTime _startedAt;
     private int _coreCount;
     private TimeSpan _duration = TimeSpan.FromSeconds(DefaultDurationSeconds);
+
+    public CpuStressModule(ISensorProvider sensors) : this(sensors, null, null)
+    {
+    }
+
+    /// <summary>Production ctor: real burn loop with an optional diagnostics sink.</summary>
+    public CpuStressModule(ISensorProvider sensors, IDiagnosticLog? log) : this(sensors, null, log)
+    {
+    }
+
+    /// <paramref name="workerBody"/> is a fault-injection seam: the default runs the real
+    /// tight burning loop; tests may substitute a body that throws to verify a worker
+    /// failure degrades to <see cref="TestStatus.Failed"/> instead of ending the process.
+    internal CpuStressModule(ISensorProvider sensors, Action<CancellationToken>? workerBody, IDiagnosticLog? log)
+    {
+        _sensors = sensors ?? throw new ArgumentNullException(nameof(sensors));
+        _workerBody = workerBody ?? (token => Burn(token));
+        _log = log;
+    }
 
     public IModuleMetadata Metadata { get; } = new StressMetadata();
 
@@ -101,7 +123,7 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
             _workers = new Thread[cores];
             for (int i = 0; i < cores; i++)
             {
-                var worker = new Thread(() => RunBurn(_cts.Token))
+                var worker = new Thread(() => RunBurn(_workerBody, _cts.Token))
                 {
                     IsBackground = true,
                     Priority = ThreadPriority.BelowNormal,
@@ -137,6 +159,10 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
             cb = StopWorkers(TestStatus.Cancelled);
         }
 
+        // Tear down workers outside the lock: siblings that faulted are blocked on
+        // the gate and must be allowed to bail (IsRunning is now false) before we join.
+        JoinWorkers();
+
         // Invoke the completion callback outside the lock: it re-enters the
         // orchestrator, which may concurrently hold its lock while calling
         // Cancel() on this module (AB-BA deadlock otherwise).
@@ -158,6 +184,7 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
             cb = StopWorkers(TestStatus.Passed);
         }
 
+        JoinWorkers();
         cb?.Invoke(TestStatus.Passed);
     }
 
@@ -167,15 +194,15 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
     /// uncaught exception on a background thread would otherwise crash the app
     /// (architecture §9.7: a single failing call must degrade, not crash).
     /// </summary>
-    private void RunBurn(CancellationToken token)
+    private void RunBurn(Action<CancellationToken> workerBody, CancellationToken token)
     {
         try
         {
-            Burn(token);
+            workerBody(token);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"CpuStressModule: worker failed — {ex}");
+            _log?.Write($"CpuStressModule: worker failed; degrading the run to Failed — {ex.GetType().Name}: {ex.Message}");
             FailRun(ex);
         }
     }
@@ -198,6 +225,10 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
             cb = StopWorkers(TestStatus.Failed);
         }
 
+        // Tear down workers outside the lock so a sibling that faulted can release
+        // the gate (IsRunning is now false) instead of deadlocking the join.
+        JoinWorkers();
+
         Findings.Add($"Burn-in worker failed ({ex.GetType().Name}): {ex.Message}");
         cb?.Invoke(TestStatus.Failed);
     }
@@ -215,7 +246,6 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
         _telemetryTimer = null;
 
         _cts?.Cancel();
-        JoinWorkers();
 
         CurrentPhase = finalStatus == TestStatus.Passed ? ModulePhase.Complete : ModulePhase.Cancelled;
         Findings.Add(finalStatus == TestStatus.Passed
@@ -289,7 +319,7 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
         var temps = new List<float?>();
         try
         {
-            foreach (var reading in sensors.ReadAll())
+            foreach (var reading in _sensors.ReadAll())
             {
                 bool cpu = reading.SensorName.Contains("CPU", StringComparison.OrdinalIgnoreCase) ||
                            reading.HardwareName.Contains("CPU", StringComparison.OrdinalIgnoreCase);

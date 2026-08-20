@@ -51,4 +51,18 @@
     <Delete Files="@(_UnwantedPublishPdb)" TreatErrorsAsWarnings="true" />
   </Target>
 
+  <!--
+    Phase 7 / §9.1 — "exactly one artifact" DoD, asserted documentably. Opt-in
+    (pass -p:VerifyPublishArtifacts=true) so it never slows the normal build/test
+    or an unguarded publish. Counts .exe files in the publish output; a single-file
+    build must produce exactly one, or the profile is misconfigured.
+  -->
+  <Target Name="VerifySingleFileArtifact" AfterTargets="Publish" Condition="'$(VerifyPublishArtifacts)' == 'true'">
+    <ItemGroup>
+      <_PublishedExe Include="$(PublishDir)**\*.exe" />
+    </ItemGroup>
+    <Error Condition="@(_PublishedExe->Count()) != 1"
+           Text="Single-file publish must produce exactly one .exe; found @(_PublishedExe->Count()). Re-check the PortableSingleFile profile (§9.1)." />
+  </Target>
+
 </Project>

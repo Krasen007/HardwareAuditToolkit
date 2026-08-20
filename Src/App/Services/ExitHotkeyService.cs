@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.Core.Messages;
+using HardwareAuditToolkit.Infrastructure;
 
 namespace HardwareAuditToolkit.App.Services;
 
@@ -36,9 +37,15 @@ public sealed class ExitHotkeyService : IDisposable
     private IntPtr _hookId;
     private uint _threadId;
     private bool _disposed;
+    private readonly IDiagnosticLog? _log;
 
-    public ExitHotkeyService()
+    public ExitHotkeyService() : this(null)
     {
+    }
+
+    public ExitHotkeyService(IDiagnosticLog? log)
+    {
+        _log = log;
         _thread = new Thread(Loop)
         {
             IsBackground = true,
@@ -112,7 +119,7 @@ public sealed class ExitHotkeyService : IDisposable
         {
             // The hook thread must keep pumping (§9.2); a thrown callback would end it
             // and disable Ctrl+E. Contain the failure and keep the chain intact.
-            Debug.WriteLine($"ExitHotkeyService: hook callback threw — {ex}");
+            _log?.Write($"ExitHotkeyService: hook callback threw — {ex}");
         }
 
         return CallNextHookEx(_hookId, nCode, wParam, lParam);

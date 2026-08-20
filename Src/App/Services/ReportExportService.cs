@@ -18,33 +18,46 @@ public sealed class ReportExportService
 {
     private readonly SessionExporter _exporter;
     private readonly AuditSession _session;
+    private readonly ReportExportOptions? _optionsOverride;
 
-    public ReportExportService(SessionExporter exporter, AuditSession session)
+    public ReportExportService(SessionExporter exporter, AuditSession session) : this(exporter, session, null)
+    {
+    }
+
+    /// <summary>
+    /// Test/embedded seam: lets a caller supply the full §9.6 cascade options (including
+    /// deeming every directory unwritable) so the failure branch can be exercised without
+    /// WPF dialogs. Production callers use the two-argument constructor.
+    /// </summary>
+    internal ReportExportService(SessionExporter exporter, AuditSession session, ReportExportOptions? optionsOverride)
     {
         _exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
         _session = session ?? throw new ArgumentNullException(nameof(session));
+        _optionsOverride = optionsOverride;
     }
 
     /// <summary>
     /// Runs the full export cascade for the current session. Marks the session completed
-    /// (if not already) so the report carries a finished timestamp, then delegates to the
-    /// cascade with the standard §9.6 candidate locations.
+    /// only once a writable location has actually produced the report (or the clipboard
+    /// last resort preserved it), so a session is not stamped "completed" when every
+    /// persist path failed, then delegates to the cascade with the §9.6 candidates.
     /// </summary>
     public ReportExportResult Export()
     {
-        if (_session.CompletedAt is null)
-        {
-            _session.CompletedAt = DateTime.UtcNow;
-        }
-
-        var options = new ReportExportOptions
+        var options = _optionsOverride ?? new ReportExportOptions
         {
             PreferredDirectories = BuildPreferredDirectories(),
             RequestManualFolder = ShowFolderPicker,
             ShowClipboardFallback = ShowClipboardFallback,
         };
 
-        return _exporter.Export(_session, options);
+        var result = _exporter.Export(_session, options);
+        if (result.Success && _session.CompletedAt is null)
+        {
+            _session.CompletedAt = DateTime.UtcNow;
+        }
+
+        return result;
     }
 
     /// <summary>

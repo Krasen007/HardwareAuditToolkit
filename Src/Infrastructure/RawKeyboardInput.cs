@@ -45,6 +45,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     private int _captureThreadId;
     private readonly ManualResetEventSlim _ready = new(false);
     private bool _disposed;
+    private readonly IDiagnosticLog? _log;
 
     // Owned exclusively by the capture thread — never touched from another thread.
     // ThreadStatic so a stop→start restart cannot have a still-tearing-down old
@@ -58,6 +59,15 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     private WndProc? _wndProc; // referenced for the lifetime of the window
 
     public event EventHandler<RawKeySample>? KeyReceived;
+
+    public RawKeyboardInput() : this(null)
+    {
+    }
+
+    public RawKeyboardInput(IDiagnosticLog? log)
+    {
+        _log = log;
+    }
 
     public void Start()
     {
@@ -244,7 +254,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"RawKeyboardInput: subscriber threw; sample dropped — {ex}");
+                _log?.Write($"RawKeyboardInput: subscriber threw; sample dropped — {ex}");
             }
         }
         finally

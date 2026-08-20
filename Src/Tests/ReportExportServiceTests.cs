@@ -84,6 +84,62 @@ public class ReportExportServiceTests
         }
     }
 
+    [Fact]
+    public void Export_OnTotalFailure_DoesNotStampCompletedAt_AndReportsFailure()
+    {
+        var session = new AuditSession
+        {
+            SessionId = Guid.NewGuid().ToString("N"),
+            Hostname = "FAILHOST",
+            StartedAt = DateTime.UtcNow,
+        };
+
+        // §9.6 cascade with no durable path available: no writable directory, no manual
+        // picker, no clipboard fallback. "Completed" must mean a durable export landed.
+        var options = new ReportExportOptions
+        {
+            PreferredDirectories = [],
+            RequestManualFolder = null,
+            ShowClipboardFallback = null,
+        };
+
+        var service = new ReportExportService(new SessionExporter(), session, options);
+
+        var result = service.Export();
+
+        Assert.False(result.Success);
+        Assert.Equal(ExportFailureReason.NoWritableLocation, result.FailureReason);
+        Assert.Null(session.CompletedAt);
+    }
+
+    [Fact]
+    public void Export_EveryLocationFails_DoesNotStampCompletedAt()
+    {
+        var session = new AuditSession
+        {
+            SessionId = Guid.NewGuid().ToString("N"),
+            Hostname = "FAILHOST",
+            StartedAt = DateTime.UtcNow,
+        };
+        Assert.Null(session.CompletedAt);
+
+        var service = new ReportExportService(new SessionExporter(), session, new ReportExportOptions
+        {
+            // No preferred directory, operator cancels the picker, and no clipboard
+            // last resort — every §9.6 persist path fails.
+            PreferredDirectories = [],
+            RequestManualFolder = () => null,
+            ShowClipboardFallback = null,
+        });
+
+        var result = service.Export();
+
+        Assert.False(result.Success);
+        Assert.Equal(ExportFailureReason.NoWritableLocation, result.FailureReason);
+        // A session must not be reported "completed" when nothing was durably preserved.
+        Assert.Null(session.CompletedAt);
+    }
+
     private static string AppDirectory()
     {
         string? appDir = Path.GetDirectoryName(Environment.ProcessPath);
