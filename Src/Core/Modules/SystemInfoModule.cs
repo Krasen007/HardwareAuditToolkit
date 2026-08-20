@@ -16,31 +16,20 @@ namespace HardwareAuditToolkit.Core.Modules;
 /// collect degrades to <see cref="TestStatus.Warning"/> rather than crashing.
 /// </para>
 /// </summary>
-public sealed class SystemInfoModule : ITestModule
+public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
 {
-    private readonly SystemInfoProvider _provider;
+    private readonly SystemInfoProvider _provider = provider;
     private readonly object _gate = new();
-    private ModulePhase _phase = ModulePhase.NotStarted;
     private Action<TestStatus>? _onComplete;
     private int _runGeneration;
 
-    public SystemInfoModule(SystemInfoProvider provider)
-    {
-        _provider = provider;
-        Metadata = new SystemInfoMetadata();
-    }
-
-    public IModuleMetadata Metadata { get; }
+    public IModuleMetadata Metadata { get; } = new SystemInfoMetadata();
 
     public string ModuleId => "system";
 
-    public ModulePhase CurrentPhase
-    {
-        get => _phase;
-        private set => _phase = value;
-    }
+    public ModulePhase CurrentPhase { get; private set; } = ModulePhase.NotStarted;
 
-    public bool IsRunning => _phase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
+    public bool IsRunning => CurrentPhase is ModulePhase.Setup or ModulePhase.Running or ModulePhase.AwaitingOperatorConfirmation;
 
     public IList<ModuleMeasurement> Measurements { get; } = new List<ModuleMeasurement>();
 
@@ -190,7 +179,7 @@ public sealed class SystemInfoModule : ITestModule
         public string DisplayName => "System Info";
         public string Description => "WMI/CIM inventory: CPU, RAM, disk, BIOS.";
         public string Category => "system";
-        public string[] RequiredCapabilities => Array.Empty<string>();
+        public string[] RequiredCapabilities => [];
         public bool IsExclusive => false;
         public TimeSpan? MaxDuration => null;
     }

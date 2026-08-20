@@ -95,8 +95,7 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
         _module = module;
         _dispatcher = Application.Current.Dispatcher;
 
-        Patterns = new ObservableCollection<string>
-        {
+        Patterns = [
             "Solid — White",
             "Solid — Black",
             "Solid — Red",
@@ -106,7 +105,7 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
             "Gradient — Horizontal",
             "Grid lines",
             "Crosshatch",
-        };
+        ];
 
         RefreshMonitors();
 

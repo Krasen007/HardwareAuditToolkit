@@ -22,11 +22,10 @@ public class MonitorModuleTests
         public int LastSetValue;
 
         public IReadOnlyList<MonitorInfo> EnumerateMonitors()
-            => new[]
-            {
+            => [
                 new MonitorInfo { Index = 0, FriendlyName = "Fake Display", Width = 1920, Height = 1080, IsPrimary = true },
                 new MonitorInfo { Index = 1, FriendlyName = "Second Display", Width = 1280, Height = 1024, IsPrimary = false },
-            };
+            ];
 
         public BrightnessReading GetBrightness(int index)
             => Supported
@@ -50,7 +49,7 @@ public class MonitorModuleTests
             Hostname = Environment.MachineName,
             StartedAt = DateTime.UtcNow,
         };
-        orchestrator = new TestOrchestrator(session, new ITestModule[] { module });
+        orchestrator = new TestOrchestrator(session, [ module ]);
         return module;
     }
 
@@ -116,7 +115,7 @@ public class MonitorModuleTests
         var configure = typeof(HardwareAuditToolkit.App.App).GetMethod(
             "ConfigureServices", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         Assert.NotNull(configure);
-        configure!.Invoke(null, new object[] { services });
+        configure!.Invoke(null, [ services ]);
 
         Assert.Single(services, d => d.ServiceType == typeof(MonitorTestModuleViewModel)
                                      && d.Lifetime == ServiceLifetime.Transient);

@@ -6,6 +6,4 @@ namespace HardwareAuditToolkit.Core.Messages;
 /// The recipient marshals the actual shutdown onto the UI thread so the
 /// low-level hook thread is never blocked.
 /// </summary>
-public sealed class ExitRequestedMessage
-{
-}
+public sealed class ExitRequestedMessage;

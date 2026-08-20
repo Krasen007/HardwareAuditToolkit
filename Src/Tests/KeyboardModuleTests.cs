@@ -38,7 +38,7 @@ public class KeyboardModuleTests
             Hostname = Environment.MachineName,
             StartedAt = DateTime.UtcNow,
         };
-        orchestrator = new TestOrchestrator(session, new ITestModule[] { module });
+        orchestrator = new TestOrchestrator(session, [ module ]);
         return module;
     }
 
@@ -141,7 +141,7 @@ public class KeyboardModuleTests
         var configure = typeof(HardwareAuditToolkit.App.App).GetMethod(
             "ConfigureServices", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(configure);
-        configure!.Invoke(null, new object[] { services });
+        configure!.Invoke(null, [ services ]);
 
         Assert.Single(services, d => d.ServiceType == typeof(KeyboardTestModuleViewModel)
                                      && d.Lifetime == ServiceLifetime.Transient);

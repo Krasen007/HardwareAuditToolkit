@@ -334,7 +334,7 @@ public sealed class KeyboardTestModule : ITestModule
         public string DisplayName => "Keyboard Test";
         public string Description => "Per-key coverage, WPM and accuracy.";
         public string Category => "keyboard";
-        public string[] RequiredCapabilities => new[] { "raw keyboard input" };
+        public string[] RequiredCapabilities => [ "raw keyboard input" ];
         public bool IsExclusive => true;
         // A long, unattended-friendly budget; the operator confirms well before this.
         public TimeSpan? MaxDuration => TimeSpan.FromMinutes(30);

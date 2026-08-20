@@ -111,7 +111,7 @@ public sealed class MonitorTestModule : ITestModule
         }
         catch
         {
-            return Array.Empty<MonitorInfo>();
+            return [];
         }
     }
 
@@ -357,7 +357,7 @@ public sealed class MonitorTestModule : ITestModule
         public string DisplayName => "Monitor Test";
         public string Description => "Fullscreen patterns and DDC/CI brightness.";
         public string Category => "monitor";
-        public string[] RequiredCapabilities => new[] { "DDC/CI" };
+        public string[] RequiredCapabilities => [ "DDC/CI" ];
         public bool IsExclusive => true;
         public TimeSpan? MaxDuration => TimeSpan.FromMinutes(30);
     }
