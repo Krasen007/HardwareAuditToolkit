@@ -17,6 +17,7 @@ public partial class MonitorTestView : UserControl
     public MonitorTestView()
     {
         InitializeComponent();
+        Loaded += (_, _) => ViewModel?.StartTestCommand.Execute(null);
     }
 
     private MonitorTestModuleViewModel? ViewModel => DataContext as MonitorTestModuleViewModel;

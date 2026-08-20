@@ -17,6 +17,7 @@ namespace HardwareAuditToolkit.App.Views
         public MouseTestView()
         {
             InitializeComponent();
+            Loaded += (_, _) => ViewModel?.StartTestCommand.Execute(null);
         }
 
         private MouseTestModuleViewModel? ViewModel => DataContext as MouseTestModuleViewModel;
