@@ -114,19 +114,37 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
     {
         if (msg == WmInputDeviceChange)
         {
-            string kind = checked((int)wParam) == GidcArrival ? "arrived" : "removed";
-            Refresh();
-            LastEvent = $"Input device {kind}. Keyboards={KeyboardCount}, Mice={MouseCount}.";
-            Publish();
+            try
+            {
+                string kind = checked((int)wParam) == GidcArrival ? "arrived" : "removed";
+                Refresh();
+                LastEvent = $"Input device {kind}. Keyboards={KeyboardCount}, Mice={MouseCount}.";
+                Publish();
+            }
+            catch (Exception ex)
+            {
+                // A failure here must not kill the message-only window's thread
+                // (that would end the whole process). Contain and keep listening.
+                Debug.WriteLine($"DeviceChangeService: WM_INPUT_DEVICE_CHANGE handling threw — {ex}");
+            }
+
             handled = true;
             return IntPtr.Zero;
         }
 
         if (msg == WmDisplayChange)
         {
-            Refresh();
-            LastEvent = $"Display configuration changed. Monitors={MonitorCount}.";
-            Publish();
+            try
+            {
+                Refresh();
+                LastEvent = $"Display configuration changed. Monitors={MonitorCount}.";
+                Publish();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"DeviceChangeService: WM_DISPLAYCHANGE handling threw — {ex}");
+            }
+
             handled = true;
             return IntPtr.Zero;
         }

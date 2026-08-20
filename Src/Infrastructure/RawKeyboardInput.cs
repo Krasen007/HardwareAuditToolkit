@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -234,7 +235,17 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
                 IsKeyDown = (kb.Flags & RiKeyBreak) == 0,
             };
 
-            KeyReceived?.Invoke(this, sample);
+            try
+            {
+                // A subscriber throwing must never tear down this capture thread —
+                // doing so would end the whole process. Degrade to a dropped sample
+                // (architecture §9.7: a single failing call must not crash the audit).
+                KeyReceived?.Invoke(this, sample);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"RawKeyboardInput: subscriber threw; sample dropped — {ex}");
+            }
         }
         finally
         {

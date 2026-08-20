@@ -91,19 +91,28 @@ public sealed class ExitHotkeyService : IDisposable
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && (wParam == (IntPtr)WmKeyDown || wParam == (IntPtr)WmSysKeyDown))
+        try
         {
-            int vkCode = Marshal.ReadInt32(lParam);
-            if (vkCode == VkE)
+            if (nCode >= 0 && (wParam == (IntPtr)WmKeyDown || wParam == (IntPtr)WmSysKeyDown))
             {
-                bool ctrl = (GetAsyncKeyState(VkLControl) & 0x8000) != 0
-                            || (GetAsyncKeyState(VkRControl) & 0x8000) != 0;
-                if (ctrl)
+                int vkCode = Marshal.ReadInt32(lParam);
+                if (vkCode == VkE)
                 {
-                    // Non-blocking: the recipient marshals to the UI thread.
-                    WeakReferenceMessenger.Default.Send(new ExitRequestedMessage());
+                    bool ctrl = (GetAsyncKeyState(VkLControl) & 0x8000) != 0
+                                || (GetAsyncKeyState(VkRControl) & 0x8000) != 0;
+                    if (ctrl)
+                    {
+                        // Non-blocking: the recipient marshals to the UI thread.
+                        WeakReferenceMessenger.Default.Send(new ExitRequestedMessage());
+                    }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            // The hook thread must keep pumping (§9.2); a thrown callback would end it
+            // and disable Ctrl+E. Contain the failure and keep the chain intact.
+            Debug.WriteLine($"ExitHotkeyService: hook callback threw — {ex}");
         }
 
         return CallNextHookEx(_hookId, nCode, wParam, lParam);

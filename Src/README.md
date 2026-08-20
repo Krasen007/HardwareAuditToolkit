@@ -99,17 +99,31 @@ Outputs land in `Src\App\bin\publish\`.
   portable app dir → Desktop → %TEMP% → manual folder picker → clipboard modal),
   each candidate probed with a quick write-test so a vanishing volume (e.g. the USB
   stick pulled mid-write) is caught without losing the in-memory session; an
-  always-available **Export Report** button lives in the persistent header (and on
-  the dashboard). 46 tests pass (`TestOrchestratorTests` + `Phase2ModuleTests` +
-  `KeyboardModuleTests` + `MouseModuleTests` + `MonitorModuleTests` +
-  `ReportExportTests`).
+   always-available **Export Report** button lives in the persistent header (and on
+   the dashboard). 46 tests pass (`TestOrchestratorTests` + `Phase2ModuleTests` +
+   `KeyboardModuleTests` + `MouseModuleTests` + `MonitorModuleTests` +
+   `ReportExportTests`).
+- **Phase 7 (polish & refactor) — done:** hook/resource cleanup audit (raw-input and
+   `WndProc` run loops torn down on `Cancel()` and view-model disposal, so no capture
+   leaks across navigation); global fault containment in `App.xaml.cs`
+   (`DispatcherUnhandledException` keeps a UI-thread fault from ending the audit and
+   logs every other failure, architecture §9.7); module run-loop guarding so a throw on
+   a background thread — the CPU-stress workers, the raw keyboard/mouse capture threads,
+   the Ctrl+E hook thread, and the device-change message-only window — degrades to
+   "unavailable"/`Failed` instead of terminating the process; and per-call best-effort
+   degradation in the WMI/DDC-CI/sensor providers. 55 tests pass, now including App-layer
+   coverage (`ReportExportServiceTests` for the §9.6 cascade and `NavigationServiceTests`
+   for the module-id → view-model routing + placeholder fallback). **Manual pre-ship items
+   remain (cannot be satisfied in code):** Authenticode code-signing via the org PKI (§9.1),
+   an EDR pass (e.g. Microsoft Defender for Endpoint) before wide rollout, and a manual walk
+   of every exit path from every screen, including mid-CPU-stress.
 
 ---
 
 ## Recent code-quality cleanup & decisions
 
 A pass resolved every open analyzer diagnostic (IDE / CA / Roslynator / SYSLIB) so
-the solution builds with **zero warnings, zero errors** (46 xunit tests passing).
+the solution builds with **zero warnings, zero errors** (55 xunit tests passing).
 The style rules applied are now the project's house style:
 
 - **Collection expressions** — target-typed `[]` / `[...]` in place of

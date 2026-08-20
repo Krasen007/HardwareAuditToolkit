@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.Core.Messages;
@@ -27,6 +29,10 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Phase 7 — last-resort fault containment: a single failing call must
+        // degrade to "unavailable" rather than crash the audit (architecture §9.7).
+        WireGlobalFaultHandlers();
 
         // §9.1 — point the single-file extraction directory at a predictable
         // path so security teams can allow-list one location. Best-effort,
@@ -83,6 +89,31 @@ public partial class App : Application
         // live thermal/load data from the first module that needs it.
         var sensors = _services.GetRequiredService<ISensorProvider>();
         sensors.Start();
+    }
+
+    /// <summary>
+    /// Phase 7 — last-resort fault containment. Background run loops are guarded at
+    /// their source; here we keep the WPF/UI thread alive on an unhandled exception
+    /// and log every other failure so a fault is never silent (architecture §9.7).
+    /// </summary>
+    private static void WireGlobalFaultHandlers()
+    {
+        Application.Current.DispatcherUnhandledException += (_, e) =>
+        {
+            Debug.WriteLine($"HardwareAuditToolkit: unhandled UI exception (app kept alive) — {e.Exception}");
+            e.Handled = true;
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            Debug.WriteLine($"HardwareAuditToolkit: unhandled exception — {e.ExceptionObject}");
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            Debug.WriteLine($"HardwareAuditToolkit: unobserved task exception — {e.Exception}");
+            e.SetObserved();
+        };
     }
 
     /// <summary>

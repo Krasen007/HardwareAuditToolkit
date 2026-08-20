@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using HardwareAuditToolkit.Core;
@@ -100,7 +101,7 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
             _workers = new Thread[cores];
             for (int i = 0; i < cores; i++)
             {
-                var worker = new Thread(() => Burn(_cts.Token))
+                var worker = new Thread(() => RunBurn(_cts.Token))
                 {
                     IsBackground = true,
                     Priority = ThreadPriority.BelowNormal,
@@ -161,6 +162,47 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
     }
 
     /// <summary>
+    /// Runs <see cref="Burn"/>, converting any worker-thread exception into a clean
+    /// <see cref="TestStatus.Failed"/> rather than terminating the process. An
+    /// uncaught exception on a background thread would otherwise crash the app
+    /// (architecture §9.7: a single failing call must degrade, not crash).
+    /// </summary>
+    private void RunBurn(CancellationToken token)
+    {
+        try
+        {
+            Burn(token);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"CpuStressModule: worker failed — {ex}");
+            FailRun(ex);
+        }
+    }
+
+    /// <summary>
+    /// Records a worker failure. Mirrors <see cref="CompleteNaturally"/> but resolves
+    /// as <see cref="TestStatus.Failed"/>; the completion callback is invoked AFTER
+    /// releasing the lock, as with the other completion paths.
+    /// </summary>
+    private void FailRun(Exception ex)
+    {
+        Action<TestStatus>? cb;
+        lock (_gate)
+        {
+            if (!IsRunning || _cts is null)
+            {
+                return;
+            }
+
+            cb = StopWorkers(TestStatus.Failed);
+        }
+
+        Findings.Add($"Burn-in worker failed ({ex.GetType().Name}): {ex.Message}");
+        cb?.Invoke(TestStatus.Failed);
+    }
+
+    /// <summary>
     /// Tears down workers/timers, records the result, and publishes a final
     /// telemetry sample. Caller must hold <see cref="_gate"/>. Returns the
     /// completion callback; the caller invokes it AFTER releasing the lock so
@@ -190,6 +232,12 @@ public sealed class CpuStressModule(ISensorProvider sensors) : ITestModule
     {
         foreach (var worker in _workers)
         {
+            if (ReferenceEquals(worker, Thread.CurrentThread))
+            {
+                // Never join the thread we're currently running on (would deadlock).
+                continue;
+            }
+
             try
             {
                 worker.Join(TimeSpan.FromSeconds(5));
