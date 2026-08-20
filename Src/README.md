@@ -148,7 +148,7 @@ The style rules applied are now the project's house style:
 - **Single-char `string.Contains(char)`** and removal of redundant `!` where the
   target API already accepts null (CA1847/RCS1249).
 
-### Interop decision: `DllImport` stays (SYSLIB1054 suppressed)
+### Interop decision: `DllImport` stays for non-blittable P/Invokes (SYSLIB1054 suppressed)
 
 `SYSLIB1054` recommends migrating P/Invokes to `LibraryImport`. **We keep
 `DllImport`** for the Win32 / `dxva2.dll` wrappers (`DeviceChangeService`,
@@ -159,6 +159,12 @@ and a delegate callback (`EnumDisplayMonitors`). The suggestion is suppressed pe
 file (`#pragma warning disable/restore SYSLIB1054`) behind a justification comment.
 A future migration would require making the native types blittable and enabling
 `AllowUnsafeBlocks`.
+
+**Blittable P/Invokes** — e.g. `SetWindowPos` in `MonitorPatternWindow` — are
+migrated to `LibraryImport` (which requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>`
+in the App project). These use only blittable types (`IntPtr`, `int`, `uint`,
+`bool`) that the source generator can marshal without the non-blittable struct
+limitations.
 
 ---
 

@@ -83,12 +83,8 @@ public class NavigationServiceTests
            || t == typeof(MouseTestModuleViewModel)
            || t == typeof(MonitorTestModuleViewModel);
 
-    private sealed class FuncServiceProvider : IServiceProvider
+        private sealed class FuncServiceProvider(Func<Type, object?> resolve) : IServiceProvider
     {
-        private readonly Func<Type, object?> _resolve;
-
-        public FuncServiceProvider(Func<Type, object?> resolve) => _resolve = resolve;
-
-        public object? GetService(Type serviceType) => _resolve(serviceType);
+        public object? GetService(Type serviceType) => resolve(serviceType);
     }
 }

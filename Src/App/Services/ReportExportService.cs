@@ -63,7 +63,7 @@ public sealed class ReportExportService
     /// <summary>
     /// §9.6 steps 1–3: portable app directory (next to the .exe), Desktop, then %TEMP%.
     /// </summary>
-    private static IReadOnlyList<string> BuildPreferredDirectories()
+    private static List<string> BuildPreferredDirectories()
     {
         var dirs = new List<string>(3);
 
@@ -88,7 +88,7 @@ public sealed class ReportExportService
             Multiselect = false,
         };
 
-        return dialog.ShowDialog() == true ? dialog.FolderName : null;
+        return dialog.ShowDialog() is true ? dialog.FolderName : null;
     }
 
     private static bool ShowClipboardFallback(string json)

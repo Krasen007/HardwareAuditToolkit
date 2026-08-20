@@ -11,19 +11,14 @@ namespace HardwareAuditToolkit.Core;
 /// best-effort; any I/O failure is swallowed so it can never break the module-completion
 /// path that triggered the save.
 /// </summary>
-public sealed class SessionCheckpointStore : ISessionCheckpointStore
+public sealed class SessionCheckpointStore(string directory) : ISessionCheckpointStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    private readonly string _directory;
+    private readonly string _directory = directory;
 
     public SessionCheckpointStore() : this(DefaultDirectory())
     {
-    }
-
-    public SessionCheckpointStore(string directory)
-    {
-        _directory = directory;
     }
 
     public void Save(AuditSession session)

@@ -11,18 +11,13 @@ namespace HardwareAuditToolkit.Infrastructure;
 /// Every write is best-effort — a failing volume must never throw into the
 /// fault-handling path that logged it (architecture §9.7).
 /// </summary>
-public sealed class FileDiagnosticLog : IDiagnosticLog
+public sealed class FileDiagnosticLog(string path) : IDiagnosticLog
 {
-    private readonly string _path;
+    private readonly string _path = path;
     private readonly object _gate = new();
 
     public FileDiagnosticLog() : this(DefaultPath())
     {
-    }
-
-    public FileDiagnosticLog(string path)
-    {
-        _path = path;
     }
 
     public void Write(string message)
@@ -45,7 +40,7 @@ public sealed class FileDiagnosticLog : IDiagnosticLog
                 if (combined.Length > MaxDiagnosticBytes)
                 {
                     // Drop the oldest history, retaining the newest lines (tail).
-                    combined = combined.Substring(combined.Length - MaxDiagnosticBytes);
+                                        combined = combined[^MaxDiagnosticBytes..];
                 }
 
                 File.WriteAllText(_path, combined);

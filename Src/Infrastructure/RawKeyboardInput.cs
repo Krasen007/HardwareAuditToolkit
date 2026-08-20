@@ -27,7 +27,7 @@ namespace HardwareAuditToolkit.Infrastructure;
 /// identifier that the vector layout maps to an on-screen key.
 /// </para>
 /// </summary>
-public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
+public sealed class RawKeyboardInput(IDiagnosticLog? log = null) : IRawKeyboardInput, IDisposable
 {
     private const int WmInput = 0x00FF;
     private const int WmQuit = 0x0012;
@@ -45,7 +45,7 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     private int _captureThreadId;
     private readonly ManualResetEventSlim _ready = new(false);
     private bool _disposed;
-    private readonly IDiagnosticLog? _log;
+    private readonly IDiagnosticLog? _log = log;
 
     // Owned exclusively by the capture thread — never touched from another thread.
     // ThreadStatic so a stop→start restart cannot have a still-tearing-down old
@@ -59,15 +59,6 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     private WndProc? _wndProc; // referenced for the lifetime of the window
 
     public event EventHandler<RawKeySample>? KeyReceived;
-
-    public RawKeyboardInput() : this(null)
-    {
-    }
-
-    public RawKeyboardInput(IDiagnosticLog? log)
-    {
-        _log = log;
-    }
 
     public void Start()
     {
@@ -405,3 +396,4 @@ public sealed class RawKeyboardInput : IRawKeyboardInput, IDisposable
     private static extern int GetCurrentThreadId();
 #pragma warning restore SYSLIB1054
 }
+

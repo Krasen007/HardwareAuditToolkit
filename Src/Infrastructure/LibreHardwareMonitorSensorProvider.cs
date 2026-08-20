@@ -31,7 +31,7 @@ public sealed class LibreHardwareMonitorSensorProvider : ISensorProvider
         IsBatteryEnabled = true,
     };
 
-    private readonly List<SensorReading> _latest = new();
+    private readonly List<SensorReading> _latest = [];
     private readonly object _gate = new();
     private Timer? _timer;
     private bool _opened;
@@ -70,7 +70,7 @@ public sealed class LibreHardwareMonitorSensorProvider : ISensorProvider
     {
         lock (_gate)
         {
-            return _latest.ToList();
+            return [.._latest];
         }
     }
 

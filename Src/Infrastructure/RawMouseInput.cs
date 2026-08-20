@@ -24,7 +24,7 @@ namespace HardwareAuditToolkit.Infrastructure;
 /// the loop (§9.2).
 /// </para>
 /// </summary>
-public sealed class RawMouseInput : IRawMouseInput, IDisposable
+public sealed class RawMouseInput(IDiagnosticLog? log = null) : IRawMouseInput, IDisposable
 {
     private const int WmInput = 0x00FF;
     private const int WmQuit = 0x0012;
@@ -56,7 +56,7 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     private int _captureThreadId;
     private readonly ManualResetEventSlim _ready = new(false);
     private bool _disposed;
-    private readonly IDiagnosticLog? _log;
+    private readonly IDiagnosticLog? _log = log;
 
     // Owned exclusively by the capture thread — never touched from another thread.
     // ThreadStatic so a stop→start restart cannot have a still-tearing-down old
@@ -70,15 +70,6 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     private WndProc? _wndProc; // referenced for the lifetime of the window
 
     public event EventHandler<RawMouseSample>? MouseReceived;
-
-    public RawMouseInput() : this(null)
-    {
-    }
-
-    public RawMouseInput(IDiagnosticLog? log)
-    {
-        _log = log;
-    }
 
     public void Start()
     {
@@ -428,3 +419,5 @@ public sealed class RawMouseInput : IRawMouseInput, IDisposable
     private static extern int GetCurrentThreadId();
 #pragma warning restore SYSLIB1054
 }
+
+

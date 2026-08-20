@@ -12,7 +12,7 @@ public sealed class ReportExportOptions
     /// Directories to attempt in order before falling back to the manual picker
     /// (architecture §9.6 steps 1–3: portable app dir, Desktop, %TEMP%).
     /// </summary>
-    public IReadOnlyList<string> PreferredDirectories { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> PreferredDirectories { get; init; } = [];
 
     /// <summary>
     /// Step 4 (§9.6): invoked when no preferred directory is writable. Should present a

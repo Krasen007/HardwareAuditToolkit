@@ -8,5 +8,5 @@ namespace HardwareAuditToolkit.Infrastructure;
 /// </summary>
 public sealed class SensorReadingsMessage
 {
-    public IReadOnlyList<SensorReading> Readings { get; init; } = Array.Empty<SensorReading>();
+        public IReadOnlyList<SensorReading> Readings { get; init; } = [];
 }

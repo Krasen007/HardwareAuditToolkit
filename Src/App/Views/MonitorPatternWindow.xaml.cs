@@ -96,7 +96,7 @@ public partial class MonitorPatternWindow : Window
         PatternBorder.Background = brush;
     }
 
-    private static Brush MakeGridBrush()
+    private static DrawingBrush MakeGridBrush()
     {
         const double tile = 64;
         var group = new GeometryGroup();
@@ -114,7 +114,7 @@ public partial class MonitorPatternWindow : Window
         return brush;
     }
 
-    private static Brush MakeCrosshatchBrush()
+    private static DrawingBrush MakeCrosshatchBrush()
     {
         const double tile = 64;
         var group = new GeometryGroup();
@@ -132,7 +132,7 @@ public partial class MonitorPatternWindow : Window
         return brush;
     }
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+    private static partial bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 }

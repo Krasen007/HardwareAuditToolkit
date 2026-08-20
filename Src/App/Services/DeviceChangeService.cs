@@ -20,7 +20,7 @@ namespace HardwareAuditToolkit.App.Services;
 /// on the event bus for any screen to react to.
 /// </para>
 /// </summary>
-public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
+public sealed class DeviceChangeService(IDiagnosticLog? log = null) : IDisposable, INotifyPropertyChanged
 {
     private const int HwndMessage = -3;
     private const int WmInputDeviceChange = 0x00FE; // WM_INPUT_DEVICE_CHANGE (0x00FF is WM_INPUT)
@@ -35,16 +35,7 @@ public sealed class DeviceChangeService : IDisposable, INotifyPropertyChanged
 
     private HwndSource? _hwndSource;
     private bool _disposed;
-    private readonly IDiagnosticLog? _log;
-
-    public DeviceChangeService() : this(null)
-    {
-    }
-
-    public DeviceChangeService(IDiagnosticLog? log)
-    {
-        _log = log;
-    }
+    private readonly IDiagnosticLog? _log = log;
 
     private int _keyboardCount;
     private int _mouseCount;

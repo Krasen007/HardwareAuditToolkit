@@ -21,7 +21,7 @@ public class CpuStressFaultInjectionTests
     {
         var module = new CpuStressModule(
             new FakeSensorProvider(),
-            token => throw new InvalidOperationException("simulated burn-in failure"),
+            _ => throw new InvalidOperationException("simulated burn-in failure"),
             null);
 
         var completed = new ManualResetEventSlim(false);
