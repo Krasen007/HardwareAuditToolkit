@@ -17,6 +17,7 @@
     <AssemblyName>HardwareAuditToolkit</AssemblyName>
     <RootNamespace>HardwareAuditToolkit.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\appicon.ico</ApplicationIcon>
 
     <Version>0.1.0</Version>
     <Product>Hardware Audit Toolkit</Product>
@@ -26,6 +27,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Core\HardwareAuditToolkit.Core.csproj" />
     <ProjectReference Include="..\Infrastructure\HardwareAuditToolkit.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\appicon.ico" />
   </ItemGroup>
 
   <ItemGroup>
