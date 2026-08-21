@@ -72,7 +72,7 @@
                             Background="#252526" BorderBrush="#3F3F46" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="Live graph — CPU load &amp; core temperature" FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" />
-                            <TextBlock Text="Sampled once per second during the burn-in. Gold = CPU load %, blue = maximum core temperature °C."
+                            <TextBlock Text="Sampled continuously — before you press Start (current load) and throughout the burn-in. Gold = CPU load %, blue = maximum core temperature °C."
                                        FontSize="11" Foreground="#BBBBBB" Margin="0,4,0,0" TextWrapping="Wrap" />
                             <Viewbox Stretch="Uniform" HorizontalAlignment="Center" Margin="0,10,0,0">
                                 <Canvas Width="{x:Static vm:CpuStressModuleViewModel.GraphWidth}"

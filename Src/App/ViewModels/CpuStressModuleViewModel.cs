@@ -9,6 +9,7 @@ using HardwareAuditToolkit.Core.Messages;
 using HardwareAuditToolkit.App.Services;
 using HardwareAuditToolkit.Core.Modules;
 using HardwareAuditToolkit.Core;
+using HardwareAuditToolkit.Infrastructure;
 
 namespace HardwareAuditToolkit.App.ViewModels;
 
@@ -25,6 +26,7 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
 {
     private const double GraphW = 640;
     private const double GraphH = 220;
+    private const int MaxSamples = 240; // ~4 min at the ambient 2s sensor cadence
 
     private readonly INavigationService _navigation;
     private readonly TestOrchestrator _orchestrator;
@@ -87,6 +89,9 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
         _stress = stress;
         _dispatcher = Application.Current.Dispatcher;
         WeakReferenceMessenger.Default.Register<StressTelemetryMessage>(this, OnTelemetry);
+        // Ambient best-effort sensor broadcasts plot the current load while idle so
+        // the graph is alive from the moment the screen opens — before Start is pressed.
+        WeakReferenceMessenger.Default.Register<SensorReadingsMessage>(this, OnSensorReadings);
 
         TargetText = TimeSpan.FromSeconds(CpuStressModule.DefaultDurationSeconds).ToString(@"m\:ss");
     }
@@ -122,27 +127,98 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
                 StatusDetail = FinalStatusText;
             }
 
-            AppendSample(message);
+            AppendSample(message.CpuLoadPercent, MaxCelsiusOf(message.CoreTempsCelsius));
         });
     }
 
-    /// <summary>Records one telemetry sample for the graph and rebuilds both lines.</summary>
-    private void AppendSample(StressTelemetryMessage message)
+    /// <summary>
+    /// Ambient sensor snapshot while idle (no burn-in running). Plots the current
+    /// system CPU load / temperature so the graph and readouts reflect live values
+    /// from the moment the screen opens — the operator still has to press Start to
+    /// actually begin the burn-in.
+    /// </summary>
+    private void OnSensorReadings(object? _, SensorReadingsMessage message)
     {
-        // CPU load (0–100 % axis), or NaN when a sensor isn't available.
-        _loadSamples.Add(message.CpuLoadPercent is { } load ? load : double.NaN);
+        // While a burn-in runs, StressTelemetryMessage drives the graph (it's the
+        // authoritative source for the loaded run); ignore the ambient snapshot so we
+        // don't double-plot.
+        if (IsRunning)
+        {
+            return;
+        }
 
-        // Maximum core temperature this tick (blue line), or NaN when none reported.
-        double tempMax = double.NaN;
-        foreach (var t in message.CoreTempsCelsius)
+        _dispatcher.Invoke(() =>
+        {
+            if (IsRunning)
+            {
+                return;
+            }
+
+            double? load = null;
+            double tempMax = double.NaN;
+            foreach (var r in message.Readings)
+            {
+                if (!IsCpuReading(r))
+                {
+                    continue;
+                }
+
+                if (r.SensorType == "Temperature")
+                {
+                    if (r.Value is { } v)
+                    {
+                        tempMax = double.IsNaN(tempMax) ? v : Math.Max(tempMax, (double)v);
+                    }
+                }
+                else if (r.SensorType == "Load" &&
+                         r.SensorName.Contains("Total", StringComparison.OrdinalIgnoreCase))
+                {
+                    load = r.Value;
+                }
+            }
+
+            CpuLoadText = load is { } l ? $"{l:0.0} %" : "N/A (sensor unavailable)";
+            TempsText = double.IsNaN(tempMax)
+                ? "N/A (sensor unavailable)"
+                : $"{tempMax:0.0} °C";
+
+            AppendSample(load, tempMax);
+        });
+    }
+
+    /// <summary>True when a reading belongs to the CPU (name/hardware match).</summary>
+    private static bool IsCpuReading(SensorReading r)
+        => r.SensorName.Contains("CPU", StringComparison.OrdinalIgnoreCase) ||
+           r.HardwareName.Contains("CPU", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Maximum non-null temperature in a list, or NaN when none present.</summary>
+    private static double? MaxCelsiusOf(IReadOnlyList<float?> celsius)
+    {
+        double max = double.NaN;
+        foreach (var t in celsius)
         {
             if (t is { } v)
             {
-                tempMax = double.IsNaN(tempMax) ? v : Math.Max(tempMax, (double)v);
+                max = double.IsNaN(max) ? v : Math.Max(max, (double)v);
             }
         }
 
-        _tempSamples.Add(tempMax);
+        return double.IsNaN(max) ? null : max;
+    }
+
+    /// <summary>Records one sample for the graph and rebuilds both lines.</summary>
+    private void AppendSample(double? load, double? tempMax)
+    {
+        _loadSamples.Add(load ?? double.NaN);
+        _tempSamples.Add(tempMax ?? double.NaN);
+
+        // Keep the graph a bounded trailing window so the x-axis step stays sane and
+        // the surface never grows without bound during a long session.
+        while (_loadSamples.Count > MaxSamples)
+        {
+            _loadSamples.RemoveAt(0);
+            _tempSamples.RemoveAt(0);
+        }
 
         LoadPoints = BuildSeries(_loadSamples, 0, 100);
         TempPoints = BuildSeries(_tempSamples);
@@ -216,5 +292,8 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
         => _navigation.NavigateToDashboard();
 
     public void Dispose()
-        => WeakReferenceMessenger.Default.Unregister<StressTelemetryMessage>(this);
+    {
+        WeakReferenceMessenger.Default.Unregister<StressTelemetryMessage>(this);
+        WeakReferenceMessenger.Default.Unregister<SensorReadingsMessage>(this);
+    }
 }
