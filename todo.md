@@ -1,0 +1,4 @@
+when the operator finishes the test and exports a report, 
+1. on the keyboard test, do not say its a warning that not all buttons are tested if the operator did not flag a defective key.
+2. in the monitor test, when the pattern is on full screen do not show the exit test button, only the back to control, this will help the operator to actually confirm if working on the other screen and not show the report the test was cancelled.
+3. on the cpu stress test the temperature is not shown, if permissions are needed show a notice, if not enable the CPU temperature on the graph, also prevent the screen from going to sleep as the test takes 5 min the monitor may go to sleep causing panic as if the computer crashed. also the live graph must fit or scale with the window of the app 

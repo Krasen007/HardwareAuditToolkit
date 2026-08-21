@@ -1,1 +1,0 @@
-dotnet publish "Src\App\HardwareAuditToolkit.App.csproj" -c Release -p:PublishProfile=PortableSingleFile

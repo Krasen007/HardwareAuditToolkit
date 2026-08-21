@@ -53,6 +53,23 @@
   </Target>
 
   <!--
+    English-only deployment: the WPF framework reference pulls satellite
+    localization folders (cs/de/es/fr/it/ja/ko/pl/pt-BR/ru/tr/zh-Hans/zh-Hant)
+    into the folder publish, holding non-English UI/print-dialog .resources.dll
+    (~15 MB). The app ships English only, so this strips them from the folder
+    profile. The single-file profile bundles these into the .exe already, so the
+    target is gated to non-single-file publishes (and is a no-op there regardless).
+  -->
+  <Target Name="RemoveWpfLocalisationFolders" AfterTargets="Publish" Condition="'$(PublishSingleFile)' != 'true'">
+    <ItemGroup>
+      <_WpfLocalisationCultures Include="cs;de;es;fr;it;ja;ko;pl;pt-BR;ru;tr;zh-Hans;zh-Hant" />
+      <_WpfLocalisationFolder Include="@(_WpfLocalisationCultures -> '$(PublishDir)%(identity)')" />
+    </ItemGroup>
+    <Message Importance="high" Text="RemoveWpfLocalisationFolders: singlefile='$(PublishSingleFile)', pubdir='$(PublishDir)', folders=@(_WpfLocalisationFolder)" />
+    <RemoveDir Directories="@(_WpfLocalisationFolder)" />
+  </Target>
+
+  <!--
     Phase 7 / §9.1 — "exactly one artifact" DoD, asserted documentably. Opt-in
     (pass -p:VerifyPublishArtifacts=true) so it never slows the normal build/test
     or an unguarded publish. Counts .exe files in the publish output; a single-file

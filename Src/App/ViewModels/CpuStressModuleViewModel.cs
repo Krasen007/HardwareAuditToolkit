@@ -230,7 +230,7 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
     /// (e.g. load 0–100 %); otherwise the series is auto-scaled to its min/max
     /// (temperature). NaN samples are skipped (no line through missing data).
     /// </summary>
-    private PointCollection BuildSeries(List<double> samples, double? fixedMin = null, double? fixedMax = null)
+    private static PointCollection BuildSeries(List<double> samples, double? fixedMin = null, double? fixedMax = null)
     {
         var clean = samples.Where(v => !double.IsNaN(v)).ToList();
         if (clean.Count == 0)
