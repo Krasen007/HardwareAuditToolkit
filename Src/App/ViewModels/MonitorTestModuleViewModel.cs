@@ -270,7 +270,17 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
 
         _module.RecordPatternViewed(CurrentPattern);
 
-        var window = new MonitorPatternWindow(SelectedMonitor, CurrentPattern);
+        int startIndex = Patterns.IndexOf(CurrentPattern);
+        if (startIndex < 0)
+        {
+            startIndex = 0;
+        }
+
+        var window = new MonitorPatternWindow(
+            SelectedMonitor,
+            Patterns,
+            startIndex,
+            p => { _module.RecordPatternViewed(p); CurrentPattern = p; });
         window.Closed += (_, _) =>
         {
             _patternWindow = null;

@@ -30,12 +30,24 @@ public partial class MonitorPatternWindow : Window
     private static readonly IntPtr HwndTopMost = new(-1);
 
     private readonly MonitorInfo _monitor;
+    private readonly IReadOnlyList<string> _patterns;
+    private readonly Action<string>? _onPatternAdvanced;
     private readonly DispatcherTimer _hideTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+    private int _patternIndex;
 
-    public MonitorPatternWindow(MonitorInfo monitor, string pattern)
+    /// <paramref name="patterns"/> — the ordered pattern cycle (drop to the next on click).
+    /// <paramref name="initialPatternIndex"/> — where the cycle starts (the operator's
+    /// selected pattern). <paramref name="onPatternAdvanced"/> — optional callback invoked
+    /// once per pattern the operator advances through (recorded to the session).
+    public MonitorPatternWindow(MonitorInfo monitor, IReadOnlyList<string> patterns, int initialPatternIndex, Action<string>? onPatternAdvanced = null)
     {
         InitializeComponent();
         _monitor = monitor;
+        _patterns = patterns;
+        _onPatternAdvanced = onPatternAdvanced;
+        _patternIndex = _patterns.Count == 0
+            ? 0
+            : Math.Clamp(initialPatternIndex, 0, _patterns.Count - 1);
 
         _hideTimer.Tick += (_, _) =>
         {
@@ -43,10 +55,39 @@ public partial class MonitorPatternWindow : Window
             _hideTimer.Stop();
         };
 
-        ApplyPattern(pattern);
+        ApplyPattern(CurrentPattern());
+        UpdatePatternIndicator();
         MouseMove += OnMouseMove;
         Loaded += (_, _) => _hideTimer.Start();
     }
+
+    /// <summary>The pattern currently shown.</summary>
+    private string CurrentPattern() => _patterns.Count == 0 ? string.Empty : _patterns[_patternIndex];
+
+    /// <summary>Advances to the next pattern in the cycle (clicking the surface).</summary>
+    private void NextPattern()
+    {
+        if (_patterns.Count == 0)
+        {
+            return;
+        }
+
+        _patternIndex = (_patternIndex + 1) % _patterns.Count;
+        ApplyPattern(CurrentPattern());
+        UpdatePatternIndicator();
+        _onPatternAdvanced?.Invoke(CurrentPattern());
+    }
+
+    private void UpdatePatternIndicator()
+    {
+        PatternIndicator.Text = _patterns.Count == 0
+            ? string.Empty
+            : $"Pattern {_patternIndex + 1}/{_patterns.Count}: {CurrentPattern()} — click to advance";
+    }
+
+    /// <summary>Clicking the pattern surface advances to the next available colour (§10 Phase 5 improvement).</summary>
+    private void PatternSurface_MouseDown(object? sender, MouseButtonEventArgs e)
+        => NextPattern();
 
     /// <summary>
     /// Places the window on the target display in raw device pixels once the

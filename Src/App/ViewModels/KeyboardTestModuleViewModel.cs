@@ -75,6 +75,9 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
 
     public ObservableCollection<KeyViewModel> Keys { get; }
 
+    /// <summary>Newest-first key-press log (mirrors the mouse click/scroll/drag log).</summary>
+    public ObservableCollection<string> LogLines { get; }
+
     public KeyboardTestModuleViewModel(
         INavigationService navigation,
         TestOrchestrator orchestrator,
@@ -86,6 +89,7 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         _dispatcher = Application.Current.Dispatcher;
 
         Keys = BuildKeys();
+        LogLines = [];
         WeakReferenceMessenger.Default.Register<KeyEventMessage>(this, OnKeyEvent);
         WeakReferenceMessenger.Default.Register<KeyboardTestStatusMessage>(this, OnStatus);
     }
@@ -125,6 +129,16 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
             if (tile is not null)
             {
                 tile.State = message.NewState;
+                tile.PressCount = message.PressCount;
+            }
+
+            if (!string.IsNullOrEmpty(message.LogLine))
+            {
+                LogLines.Insert(0, message.LogLine);
+                if (LogLines.Count > 500)
+                {
+                    LogLines.RemoveAt(LogLines.Count - 1);
+                }
             }
 
             ProgressText = $"{message.PressedCount} / {message.ExpectedCount} keys tested";
@@ -174,8 +188,10 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         foreach (var tile in Keys)
         {
             tile.State = KeyState.Untested;
+            tile.PressCount = 0;
         }
 
+        LogLines.Clear();
         ProgressText = $"0 / {_module.ExpectedCount} keys tested";
         IsCompleted = false;
         FinalStatusText = string.Empty;
@@ -213,8 +229,10 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         foreach (var tile in Keys)
         {
             tile.State = KeyState.Untested;
+            tile.PressCount = 0;
         }
 
+        LogLines.Clear();
         ProgressText = $"0 / {_module.ExpectedCount} keys tested";
         IsCompleted = false;
         FinalStatusText = string.Empty;

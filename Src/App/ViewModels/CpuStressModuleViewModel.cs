@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,14 +17,32 @@ namespace HardwareAuditToolkit.App.ViewModels;
 /// the burn-in through the orchestrator, surfaces live telemetry from
 /// <see cref="StressTelemetryMessage"/>, and exposes Start/Stop that are
 /// independent of the global exit paths (§6). UI updates are marshaled to the
-/// dispatcher because telemetry arrives on module/thread-pool threads.
+/// dispatcher because telemetry arrives on module/thread-pool threads. A live
+/// line graph of CPU load % and maximum core temperature is also rendered from
+/// the telemetry samples.
 /// </summary>
 public sealed partial class CpuStressModuleViewModel : ObservableObject, IDisposable
 {
+    private const double GraphW = 640;
+    private const double GraphH = 220;
+
     private readonly INavigationService _navigation;
     private readonly TestOrchestrator _orchestrator;
     private readonly CpuStressModule _stress;
     private readonly Dispatcher _dispatcher;
+    private readonly List<double> _loadSamples = [];
+    private readonly List<double> _tempSamples = [];
+
+    public static double GraphWidth => GraphW;
+    public static double GraphHeight => GraphH;
+
+    /// <summary>Live CPU-load graph points (gold line).</summary>
+    [ObservableProperty]
+    private PointCollection _loadPoints = [];
+
+    /// <summary>Live maximum-core-temperature graph points (blue line).</summary>
+    [ObservableProperty]
+    private PointCollection _tempPoints = [];
 
     [ObservableProperty]
     private int _coreCount = Environment.ProcessorCount;
@@ -102,7 +121,70 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
                 };
                 StatusDetail = FinalStatusText;
             }
+
+            AppendSample(message);
         });
+    }
+
+    /// <summary>Records one telemetry sample for the graph and rebuilds both lines.</summary>
+    private void AppendSample(StressTelemetryMessage message)
+    {
+        // CPU load (0–100 % axis), or NaN when a sensor isn't available.
+        _loadSamples.Add(message.CpuLoadPercent is { } load ? load : double.NaN);
+
+        // Maximum core temperature this tick (blue line), or NaN when none reported.
+        double tempMax = double.NaN;
+        foreach (var t in message.CoreTempsCelsius)
+        {
+            if (t is { } v)
+            {
+                tempMax = double.IsNaN(tempMax) ? v : Math.Max(tempMax, (double)v);
+            }
+        }
+
+        _tempSamples.Add(tempMax);
+
+        LoadPoints = BuildSeries(_loadSamples, 0, 100);
+        TempPoints = BuildSeries(_tempSamples);
+    }
+
+    /// <summary>
+    /// Maps a series to a polyline in the fixed graph space. A fixed
+    /// <paramref name="fixedMin"/>/<paramref name="fixedMax"/> axis is used when given
+    /// (e.g. load 0–100 %); otherwise the series is auto-scaled to its min/max
+    /// (temperature). NaN samples are skipped (no line through missing data).
+    /// </summary>
+    private PointCollection BuildSeries(List<double> samples, double? fixedMin = null, double? fixedMax = null)
+    {
+        var clean = samples.Where(v => !double.IsNaN(v)).ToList();
+        if (clean.Count == 0)
+        {
+            return [];
+        }
+
+        double min = fixedMin ?? clean.Min();
+        double max = fixedMax ?? clean.Max();
+        if (min == max)
+        {
+            max += 1; // avoid a flat/undefined scale for a constant series
+        }
+
+        double span = max - min;
+        var pts = new List<Point>();
+        double xStep = GraphW / (double)Math.Max(1, samples.Count - 1);
+        for (int i = 0; i < samples.Count; i++)
+        {
+            var v = samples[i];
+            if (double.IsNaN(v))
+            {
+                continue;
+            }
+
+            double t = (Math.Clamp(v, min, max) - min) / span;
+            pts.Add(new Point(i * xStep, GraphH - (t * GraphH)));
+        }
+
+        return [.. pts];
     }
 
     [RelayCommand(CanExecute = nameof(CanStart))]
@@ -112,6 +194,10 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
         IsCompleted = false;
         FinalStatusText = string.Empty;
         StatusDetail = "Burn-in running. Ctrl+E or Exit Test stops the app; Stop ends just this test.";
+        LoadPoints = [];
+        TempPoints = [];
+        _loadSamples.Clear();
+        _tempSamples.Clear();
         if (_orchestrator.TryStartModule("stress", out _))
         {
             IsRunning = true;

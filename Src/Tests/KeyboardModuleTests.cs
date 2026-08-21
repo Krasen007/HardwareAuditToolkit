@@ -152,6 +152,23 @@ public class KeyboardModuleTests
         Assert.Equal(5, services.Count(d => d.ServiceType == typeof(ITestModule)));
     }
 
+    [Fact]
+    public void Module_RepeatedKeyPress_TracksRepeatCount()
+    {
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+
+        int id = KeyboardLayout.Ansi[0].Id;
+        fake.Raise(new RawKeySample { ScanCodeId = id, IsKeyDown = true });
+        fake.Raise(new RawKeySample { ScanCodeId = id, IsKeyDown = true });
+        fake.Raise(new RawKeySample { ScanCodeId = id, IsKeyDown = true });
+
+        // Three presses of the same key: the repeat counter rises (drives the
+        // per-key badge / log), but it is still only one distinct covered key.
+        Assert.Equal(3, module.PressCountFor(id));
+        Assert.Equal(1, module.PressedCount);
+    }
+
     private static ModuleResult GetSessionResult(TestOrchestrator orchestrator)
     {
         // The orchestrator records into the session it was given; retrieve via the

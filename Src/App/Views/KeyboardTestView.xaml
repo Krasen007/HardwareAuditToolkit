@@ -34,34 +34,61 @@
                         Padding="12,6" FontSize="12" Margin="16,0,0,0" />
             </StackPanel>
 
-            <!-- Key coverage grid -->
+            <!-- Key coverage grid + latest-press log -->
             <ScrollViewer Grid.Row="1" Margin="0,12,0,0" HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto"
                           Visibility="{Binding IsWpmMode, Converter={StaticResource InverseBoolToVis}}">
-                <ItemsControl ItemsSource="{Binding Keys}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <Canvas Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="Canvas.Left" Value="{Binding X}" />
-                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:KeyViewModel}">
-                            <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="4"
-                                    BorderBrush="#444444" BorderThickness="1"
-                                    Background="{Binding State, Converter={StaticResource KeyStateBrush}}">
-                                <TextBlock Text="{Binding Label}" Foreground="#E8E8E8" FontSize="10"
-                                           TextWrapping="Wrap" HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Keys}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:KeyViewModel}">
+                                <Border Width="{Binding Width}" Height="{Binding Height}" CornerRadius="4"
+                                        BorderBrush="#444444" BorderThickness="1"
+                                        Background="{Binding State, Converter={StaticResource KeyStateBrush}}">
+                                    <Grid>
+                                        <TextBlock Text="{Binding Label}" Foreground="#E8E8E8" FontSize="10"
+                                                   TextWrapping="Wrap" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                        <!-- Repeat badge: visible once a key has been pressed more than once,
+                                             so a repeated press is clearly distinct from a single green fill. -->
+                                        <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                Margin="3,0,3,0" Padding="4,0" CornerRadius="5"
+                                                Background="#C0392B"
+                                                Visibility="{Binding ShowCountBadge, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding PressCount}" Foreground="White" FontSize="9"
+                                                       FontWeight="Bold" HorizontalAlignment="Center" />
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Key press log (mirrors the mouse click/scroll/drag log, newest first). -->
+                    <Border Margin="0,12,0,0" Padding="12" CornerRadius="8"
+                            Background="#252526" BorderBrush="#3F3F46" BorderThickness="1">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="Key press log (a number badge on a key shows how many times it was pressed)"
+                                       FontSize="13" FontWeight="SemiBold" Foreground="#E8E8E8" Margin="0,0,0,8"
+                                       TextWrapping="Wrap" />
+                            <ItemsControl ItemsSource="{Binding LogLines}"
+                                          Background="Transparent" Foreground="#D8D8D8" FontSize="11"
+                                          IsHitTestVisible="False" Focusable="False"
+                                          ClipToBounds="True" />
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
             </ScrollViewer>
 
             <!-- WPM sub-screen -->

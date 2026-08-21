@@ -28,6 +28,16 @@ public sealed class KeyEventMessage
 
     /// <summary>Total expected keys (coverage denominator).</summary>
     public int ExpectedCount { get; init; }
+
+    /// <summary>
+    /// How many times this individual key has been pressed this run (the repeat
+    /// counter). Drives the per-key repeat badge so a repeated press is visually
+    /// distinct from a single press (§10 Phase 3 improvement).
+    /// </summary>
+    public int PressCount { get; init; }
+
+    /// <summary>Human-readable press line for the operator's key-press log.</summary>
+    public string LogLine { get; init; } = string.Empty;
 }
 
 /// <summary>

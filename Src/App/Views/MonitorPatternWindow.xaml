@@ -10,14 +10,17 @@
         d:DesignHeight="1080" d:DesignWidth="1920">
     <Grid>
         <!-- Full-bleed pattern surface (renders at the monitor's own DPI via the
-             Per-Monitor V2 manifest, §9.4). -->
-        <Border x:Name="PatternBorder" />
+             Per-Monitor V2 manifest, §9.4). Clicking anywhere on it advances to the
+             next pattern in the cycle. -->
+        <Border x:Name="PatternBorder" MouseDown="PatternSurface_MouseDown" />
 
         <!-- Auto-hiding controls: a mouse-only "Back to controls" path and the
              reusable Exit overlay (§6). Hidden after a few seconds of no mouse
              movement; reappear on any mouse move. -->
         <StackPanel x:Name="OverlayPanel" Orientation="Horizontal"
                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16">
+            <TextBlock x:Name="PatternIndicator" Foreground="#E8E8E8" FontSize="13"
+                       VerticalAlignment="Center" Margin="0,0,14,0" />
             <Button x:Name="BackButton" Content="Back to controls"
                     Padding="14,8" FontSize="14" FontWeight="SemiBold"
                     Foreground="White" Background="#2D2D30"

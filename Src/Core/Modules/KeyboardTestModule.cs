@@ -31,6 +31,7 @@ public sealed class KeyboardTestModule : ITestModule
     private Action<TestStatus>? _onComplete;
     private EventHandler<RawKeySample>? _handler;
     private readonly Dictionary<int, KeyState> _states = [];
+    private readonly Dictionary<int, int> _pressCounts = [];
     private readonly IReadOnlyList<KeyLayoutDef> _layout;
     private int _pressedCount;
 
@@ -70,6 +71,16 @@ public sealed class KeyboardTestModule : ITestModule
 
     /// <summary>Total expected keys (the coverage denominator).</summary>
     public int ExpectedCount => _layout.Count;
+
+    /// <summary>
+    /// How many times a specific key has been pressed this run (repeat counter).
+    /// Exposed so the view model's per-key badge and the unit tests can observe
+    /// repeated presses without tapping the event bus.
+    /// </summary>
+    public int PressCountFor(int id)
+    {
+        lock (_gate) return _pressCounts.TryGetValue(id, out var n) ? n : 0;
+    }
 
     public bool CheckPreconditions() => true;
 
@@ -227,12 +238,19 @@ public sealed class KeyboardTestModule : ITestModule
 
         KeyState newState;
         int pressed;
+        int pressCount;
+        string logLine;
         lock (_gate)
         {
             if (!_states.TryGetValue(sample.ScanCodeId, out var prior))
             {
                 return; // not in the ANSI layout — ignore exotic/extra keys
             }
+
+            // Count every press (including repeats of an already-pressed key) so
+            // the view can show a repeat badge instead of a single green fill.
+            pressCount = (_pressCounts.TryGetValue(sample.ScanCodeId, out var seen) ? seen : 0) + 1;
+            _pressCounts[sample.ScanCodeId] = pressCount;
 
             if (prior == KeyState.Untested)
             {
@@ -242,6 +260,7 @@ public sealed class KeyboardTestModule : ITestModule
 
             newState = _states[sample.ScanCodeId];
             pressed = _pressedCount;
+            logLine = $"{KeyboardLayout.GetLabel(sample.ScanCodeId) ?? $"scan-{sample.ScanCodeId}"} — press #{pressCount}";
 
             if (pressed == _layout.Count && CurrentPhase == ModulePhase.Running)
             {
@@ -257,6 +276,8 @@ public sealed class KeyboardTestModule : ITestModule
             NewState = newState,
             PressedCount = pressed,
             ExpectedCount = _layout.Count,
+            PressCount = pressCount,
+            LogLine = logLine,
         });
 
         if (pressed == _layout.Count)
@@ -320,6 +341,7 @@ public sealed class KeyboardTestModule : ITestModule
     private void ResetStates()
     {
         _states.Clear();
+        _pressCounts.Clear();
         foreach (var key in _layout)
         {
             _states[key.Id] = KeyState.Untested;

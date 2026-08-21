@@ -24,4 +24,13 @@ public sealed partial class KeyViewModel(int id, string label, double x, double 
 
     [ObservableProperty]
     private KeyState _state = KeyState.Untested;
+
+    /// <summary>How many times this key has been pressed this run (repeat counter).</summary>
+    [ObservableProperty]
+    private int _pressCount;
+
+    /// <summary>True once the key has been pressed more than once (drives the repeat badge).</summary>
+    public bool ShowCountBadge => PressCount > 1;
+
+    partial void OnPressCountChanged(int value) => OnPropertyChanged(nameof(ShowCountBadge));
 }

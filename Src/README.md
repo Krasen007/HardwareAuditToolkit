@@ -127,6 +127,17 @@ Outputs land in `Src\App\bin\publish\`.
    pre-ship items remain (cannot be satisfied in code):** Authenticode code-signing via the org PKI
    (§9.1), an EDR pass (e.g. Microsoft Defender for Endpoint) before wide rollout, and a manual walk
    of every exit path from every screen, including mid-CPU-stress.
+- **Usability pass (post-Phase 7) — done:** repeated-key press clarity in the keyboard
+   test (a per-key press counter + red repeat badge on tiles pressed more than once, and a
+   newest-first **key press log** mirroring the mouse click/scroll/drag log — indicated by
+   `KeyEventMessage.PressCount`/`LogLine`, `KeyViewModel.ShowCountBadge`, and
+   `KeyboardTestModuleViewModel.LogLines`); the monitor pattern window now **cycles to the
+   next colour on any click** on the pattern surface (wrapping, with a `N/M — pattern` readout
+   and each advanced pattern recorded via `MonitorPatternWindow`'s advance callback); and the
+   CPU stress screen **no longer auto-starts** the burn-in on load and renders a **live dual-line
+   graph** of CPU load % (gold) and maximum core temperature (blue) from `StressTelemetryMessage`
+   samples (`CpuStressModuleViewModel.LoadPoints`/`TempPoints`, reflexive `CpuStressView` chart).
+   61 xunit tests pass (the keyboard repeat-counter case added).
 
 ---
 
