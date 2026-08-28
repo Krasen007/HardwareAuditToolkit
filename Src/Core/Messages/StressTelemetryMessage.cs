@@ -30,4 +30,7 @@ public sealed class StressTelemetryMessage
 
     /// <summary>Final status when the run has ended; null while running.</summary>
     public TestStatus? FinalStatus { get; init; }
+
+    /// <summary>When sensors are unavailable, a human-readable reason for the operator.</summary>
+    public string? SensorUnavailableReason { get; init; }
 }

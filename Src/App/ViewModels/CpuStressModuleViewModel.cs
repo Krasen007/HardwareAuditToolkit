@@ -112,7 +112,9 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
             CpuLoadText = message.CpuLoadPercent is { } load ? $"{load:0.0} %" : "N/A (sensor unavailable)";
             TempsText = message.CoreTempsCelsius.Count > 0
                 ? string.Join(", ", message.CoreTempsCelsius.Select(t => t is { } v ? $"{v:0.0} °C" : "—"))
-                : "N/A (sensor unavailable)";
+                : string.IsNullOrWhiteSpace(message.SensorUnavailableReason)
+                    ? "N/A (sensor unavailable)"
+                    : $"N/A — {message.SensorUnavailableReason}";
 
             IsRunning = message.Running;
             if (!message.Running && message.FinalStatus is { } status)
@@ -179,7 +181,9 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
 
             CpuLoadText = load is { } l ? $"{l:0.0} %" : "N/A (sensor unavailable)";
             TempsText = double.IsNaN(tempMax)
-                ? "N/A (sensor unavailable)"
+                ? string.IsNullOrWhiteSpace(message.UnavailableReason)
+                    ? "N/A (sensor unavailable)"
+                    : $"N/A — {message.UnavailableReason}"
                 : $"{tempMax:0.0} °C";
 
             AppendSample(load, tempMax);

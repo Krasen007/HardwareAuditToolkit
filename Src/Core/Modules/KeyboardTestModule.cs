@@ -133,8 +133,9 @@ public sealed class KeyboardTestModule : ITestModule
 
     /// <summary>
     /// Operator confirms the keyboard works. Resolves <see cref="TestStatus.Passed"/>
-    /// when every expected key registered, otherwise <see cref="TestStatus.Warning"/>
-    /// with the missing keys listed.
+    /// when every expected key registered; also resolves <see cref="TestStatus.Passed"/>
+    /// when the operator confirms despite missing keys — the operator's judgment is
+    /// authoritative and the missing keys are recorded as a finding, not a verdict.
     /// </summary>
     public void Confirm()
     {
@@ -153,19 +154,19 @@ public sealed class KeyboardTestModule : ITestModule
                 .Select(k => k.Label)
                 .ToList();
 
+            PromoteToConfirmed();
+
             if (missing.Count == 0)
             {
-                PromoteToConfirmed();
                 Findings.Add("Operator confirmed: every expected key registered at least once.");
                 status = TestStatus.Passed;
                 detail = "Passed — all expected keys registered and operator confirmed.";
             }
             else
             {
-                PromoteToConfirmed();
                 Findings.Add($"Operator confirmed, but {missing.Count} key(s) were never pressed: {string.Join(", ", missing)}.");
-                status = TestStatus.Warning;
-                detail = "Warning — some keys were not pressed before confirmation.";
+                status = TestStatus.Passed;
+                detail = $"Passed — operator confirmed ({missing.Count} key(s) not tested: {string.Join(", ", missing)}).";
             }
 
             cb = StopInternal(status, detail);

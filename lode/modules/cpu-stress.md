@@ -57,7 +57,7 @@ makes the burn-in readable.
 Load is drawn on a fixed 0–100 axis; temperature auto-scales to its own min/max.
 Missing (`NaN`) samples are skipped rather than drawn as zero.
 
-## Temperature is wired end-to-end but usually mute
+## Temperature is wired end-to-end and now explains unavailability
 
 ```csharp
 if (reading.SensorType == "Temperature") { temps.Add(reading.Value); }
@@ -65,13 +65,19 @@ if (reading.SensorType == "Temperature") { temps.Add(reading.Value); }
 
 Temperature reaches `TempsText` and `TempPoints` **when the sensor provider returns
 readings**. When `LibreHardwareMonitorSensorProvider` cannot open — the normal
-no-admin case — `ReadAll()` returns empty, the message carries `null`, and the UI
-shows `"N/A (sensor unavailable)"`.
+no-admin case — the provider captures the failure reason and the UI shows
+`"N/A — Sensor access unavailable — run as administrator for core temperatures."`
+instead of the previous mute `"N/A (sensor unavailable)"`. The reason is propagated
+through `StressTelemetryMessage.SensorUnavailableReason` and
+`SensorReadingsMessage.UnavailableReason`.
 
-That is honest (never a fabricated `0.0`), but it is **mute**: nothing tells the
-operator that elevation is why. The provider swallows the open failure silently.
-This is [`../../todo.md`](../../todo.md) item 3's "if permissions are needed show a
-notice" — roadmap D2.
+## Display-sleep prevention
+
+`SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED)`
+is called when the burn-in starts and cleared with `ES_CONTINUOUS` when it stops
+(normal completion, early stop, or cancel). During a 5-minute run the monitor stays
+on so the operator does not assume the machine crashed ([`../../todo.md`](../../todo.md)
+item 3, roadmap D1).
 
 ## Pass criteria
 
@@ -111,10 +117,10 @@ other screen auto-starts without recording why.
 ## Known defects
 
 | Defect | Detail | Fix |
-|---|---|---|
-| **No display-sleep prevention** | Zero `SetThreadExecutionState` calls in the solution. During a 5-minute run the monitor blanks and the operator assumes the machine crashed. | D1 |
-| No permissions notice for temperature | Honest `N/A` but no explanation that admin is required. | D2 |
-| Graph gutters instead of filling | A fixed 640×220 `Canvas` inside `Viewbox Stretch="Uniform"` — it scales but centres with side gutters on wide windows. | D3 |
+|---|---|
+| ~~No display-sleep prevention~~ | ~~Zero `SetThreadExecutionState` calls in the solution. During a 5-minute run the monitor blanks and the operator assumes the machine crashed.~~ | Fixed — `SetThreadExecutionState` called on start, cleared on stop/cancel/dispose |
+| ~~No permissions notice for temperature~~ | ~~Honest `N/A` but no explanation that admin is required.~~ | Fixed — `UnavailableReason` propagated from provider to view model; shows "run as administrator" notice |
+| ~~Graph gutters instead of filling~~ | ~~A fixed 640×220 `Canvas` inside `Viewbox Stretch="Uniform"` — it scales but centres with side gutters on wide windows.~~ | Fixed — `Viewbox` now `Stretch="Fill"` and `HorizontalAlignment="Stretch"` |
 | Stop records `Cancelled` | A successful early stop is indistinguishable from abandonment. | B1 / D1 |
 | Duplicated "is this a CPU reading?" predicate | The same `SensorName.Contains("CPU") \|\| HardwareName.Contains("CPU")` logic lives in both the module and the view model, and can drift. | — |
 | `BelowNormal` in a finding and on screen | Thread-priority detail leaks to the reader and the operator. | C5 |

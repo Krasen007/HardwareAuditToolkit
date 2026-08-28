@@ -109,27 +109,24 @@ real code paths.
   A deliberate 30-second smoke test is recorded identically to an abandoned run.
 - **`Failed` means both** "the hardware is broken" and "our app threw"
   (`TestOrchestrator.cs:154`, `CpuStressModule.cs:225`).
-- **`Warning` means both** "operator confirmed with keys untested"
-  (`KeyboardTestModule.cs:167`) and "WMI collection threw"
-  (`SystemInfoModule.cs:104`).
 - `TestOrchestrator.cs:373` is unreachable.
 
-Eight statuses producing five meanings, two of them false, is not calibration —
-it is deferral.
+Seven statuses producing four meanings (one false `Warning` removed). `Cancelled`
+overloading and `Failed` dual meaning remain.
 
-### F4 — The keyboard module fights the operator; the mouse module trusts it blindly
+### F4 — The keyboard module now trusts the operator; the mouse module still does
 
-`KeyboardTestModule.cs:163-169`: the operator confirms the keyboard works, and the
-tool overrides them with `Warning`. That is **`todo.md` item 1** — a user telling
-you your theory of them is wrong.
+`KeyboardTestModule.cs:163-169` previously forced `Warning` when the operator
+confirmed but keys were missing — overriding the operator's attestation. That was
+**`todo.md` item 1**. It now resolves `Passed` regardless of coverage; missing keys
+are recorded as a finding, not a verdict.
 
-`MouseTestModule.cs:146-168`: `Confirm()` returns `Passed` unconditionally. Zero
-clicks, zero scrolls, zero drags — `Passed`. The module never emits `Warning` at
-all, making `MouseTestModuleViewModel.cs:199` unreachable.
+`MouseTestModule.cs:146-168`: `Confirm()` still returns `Passed` unconditionally.
+Zero clicks, zero scrolls, zero drags — `Passed`. The module never emits `Warning`
+at all, making `MouseTestModuleViewModel.cs:199` unreachable.
 
-Two modules, opposite philosophies, in the same report. One distrusts operator
-judgment; one requires no evidence. Neither is wrong in isolation. Having both is
-incoherence.
+The keyboard now trusts operator judgment; the mouse still requires no evidence.
+The incoherence is halved, but the two trust models still coexist.
 
 **The operator can never say what was wrong.** `FlagDefect(note)` accepts a
 description (`KeyboardTestModule.cs:178`), but all three call sites pass a
@@ -160,13 +157,17 @@ never built.
 > Taste Test #5, Omission: what did these cost? The report's design, the status
 > vocabulary, and the defect-description field.
 
-### F6 — Leaving is indistinguishable from failing
+### F6 — Leaving is indistinguishable from failing (mitigated)
 
 Every `ExitOverlay` press routes to `CancelAll()` (`App.xaml.cs:134-137` →
 `TestOrchestrator.cs:205`) and records `Cancelled`. On the fullscreen pattern
-window, "Back to controls" and "Exit Test (Ctrl+E)" sit adjacent, look
-equivalent, and produce opposite report outcomes (`MonitorPatternWindow.xaml:20-30`;
-`BackButton_Click` at `.xaml.cs:118-119` does not cancel). That is **`todo.md` item 2**.
+window, "Back to controls" and "Exit Test (Ctrl+E)" sat adjacent, looked
+equivalent, and produced opposite report outcomes (`MonitorPatternWindow.xaml:20-30`;
+`BackButton_Click` at `.xaml.cs:118-119` does not cancel). That was **`todo.md` item 2**.
+
+**Mitigation applied:** the `ExitOverlay` is hidden (`Visibility="Collapsed"`) in
+`MonitorPatternWindow`. The operator sees only **"Back to controls"**, which returns
+to the monitor screen without cancelling. The global `Ctrl+E` hook still works.
 
 Compounded by `MonitorTestView.xaml.cs:20` auto-starting the run on load, so
 merely looking at the monitor screen and leaving stamps `Cancelled`.
@@ -209,10 +210,10 @@ unimplemented. The data is saved and then abandoned.
 - `OperatorActions` is a near-verbatim restatement of `Status` for
   keyboard/mouse/monitor, and empty for the other two — so section shape differs
   per module.
-- **Three template sections can never render**: **Machine ID**
-  (`AuditSession.MachineId` never assigned anywhere — so the architecture's
-  "machine-identified record" does not exist), **Notes** (never assigned, no UI),
-  **Artifacts** (zero `Artifacts.Add` calls in the solution).
+- **Two template sections can never render**: **Notes** (never assigned, no UI),
+  **Artifacts** (zero `Artifacts.Add` calls in the solution). `MachineId` is now
+  populated from `Win32_ComputerSystemProduct.UUID` / BIOS serial number by the
+  System Info module.
 - Timestamps are UTC-only (`HtmlReportTemplate.cs:136-139`), so they never match
   the technician's wall clock.
 
@@ -248,17 +249,14 @@ clipboard when it is not.
 
 ### F11 — Omissions that were not deliberate
 
-- **No display-sleep prevention.** Zero matches for `SetThreadExecutionState` in
-  the solution. During a 5-minute burn-in the monitor blanks and the operator
-  assumes the machine crashed (**`todo.md` item 3**). This is *"the first ten
-  seconds effortless"* failing at the moment of maximum anxiety.
-- **Temperature is honest but mute.** `"N/A (sensor unavailable)"` is correct
-  (`CpuStressModuleViewModel.cs:112,180`), but nothing explains that elevation is
-  the reason; `LibreHardwareMonitorSensorProvider.cs:39-51` swallows the open
-  failure silently.
-- **The CPU graph** is a fixed 640×220 `Canvas` in a `Viewbox Stretch="Uniform"`
-  (`CpuStressView.xaml:77-83`) — it scales but gutters on wide windows rather
-  than filling.
+- ~~**No display-sleep prevention.**~~ `SetThreadExecutionState` is now called
+  during the burn-in (`CpuStressModule.cs`). The monitor stays on for the full
+  duration.
+- ~~**Temperature is honest but mute.**~~ The sensor-open failure reason is now
+  surfaced through `ISensorProvider.UnavailableReason` and shown as
+  `"N/A — Sensor access unavailable — run as administrator for core temperatures."`
+- ~~**The CPU graph**~~ gutters on wide windows — fixed by switching the `Viewbox`
+  to `Stretch="Fill"`.
 - **No way to skip.** `Skipped` exists in the enum with no affordance to say
   "this machine has no mouse."
 - **Data recorded outside a running module is silently dropped.**
@@ -305,7 +303,7 @@ need a human call, and the output fixes land before any new surface.
 | A4 | Delete `ModulePlaceholderViewModel`, `ModulePlaceholderView`, its `DataTemplate`, and the `NavigationService` default arm | `ViewModels/ModulePlaceholderViewModel.cs`, `Views/ModulePlaceholderView.xaml`, `MainWindow.xaml:18-20`, `NavigationService.cs:23` |
 | A5 | Remove the `exclusive` badge and the `Category` line from dashboard cards; drop `IsExclusive`/`Category` from `DashboardItemViewModel` | `DashboardHomeView.xaml:51-59`, `DashboardItemViewModel.cs` |
 | A6 | Remove `Skipped` and `Unsupported` from `TestStatus` and their read sites; remove the dead `TestOrchestrator.cs:373` arm | `IModuleMetadata.cs:64-68`, `TestOrchestrator.cs:359,367,371-374`, `HtmlReportTemplate.cs:145`, `MonitorTestModuleViewModel.cs:193` |
-| A7 | Remove the Machine ID, Notes and Artifacts template branches and the unused model members — or populate them. Prefer removal; `MachineId` is the only one worth keeping, and only if actually set. | `HtmlReportTemplate.cs:49-50,113-119,122-126`, `AuditSession.cs:50,56` |
+| A7 | Remove the Notes and Artifacts template branches and the unused model members; `MachineId` is now populated by SystemInfoModule | `HtmlReportTemplate.cs:49-50,113-119,122-126`, `AuditSession.cs:56` |
 | A8 | Remove the unreachable `Warning` arm in the mouse VM and the stale `duck/bicycle` doc comment | `MouseTestModuleViewModel.cs:20,199` |
 
 **Acceptance:** solution builds with zero warnings; `dotnet test` green with the
@@ -343,11 +341,11 @@ golden files fail on any wording drift.
 
 ### Pass D — The operator's environment (`todo.md` item 3)
 
-| # | Action | Files |
+| # | Action | Status |
 |---|---|---|
-| D1 | `SetThreadExecutionState(ES_CONTINUOUS \| ES_DISPLAY_REQUIRED \| ES_SYSTEM_REQUIRED)` for the duration of a burn-in, cleared on stop/cancel/dispose | `CpuStressModule.cs` or a small `DisplaySleepBlocker` in Infrastructure |
-| D2 | Explain *why* temperature is unavailable: surface the sensor-open failure from `LibreHardwareMonitorSensorProvider` and show a one-line "run as administrator for core temperatures" notice instead of a bare `N/A` | `LibreHardwareMonitorSensorProvider.cs:39-51`, `ISensorProvider.cs`, `CpuStressModuleViewModel.cs:112,180`, `CpuStressView.xaml:57-61` |
-| D3 | Make the graph fill available width: bind the `Canvas` width or switch the `Viewbox` to `Stretch="Fill"` horizontally with a fixed vertical scale | `CpuStressView.xaml:77-83`, `CpuStressModuleViewModel.BuildSeries` |
+| D1 | `SetThreadExecutionState(ES_CONTINUOUS \| ES_DISPLAY_REQUIRED \| ES_SYSTEM_REQUIRED)` for the duration of a burn-in, cleared on stop/cancel/dispose | Done — `CpuStressModule.cs` |
+| D2 | Explain *why* temperature is unavailable: surface the sensor-open failure from `LibreHardwareMonitorSensorProvider` and show a one-line "run as administrator for core temperatures" notice instead of a bare `N/A` | Done — `ISensorProvider.UnavailableReason`, `LibreHardwareMonitorSensorProvider.cs`, `StressTelemetryMessage.SensorUnavailableReason` |
+| D3 | Make the graph fill available width: bind the `Canvas` width or switch the `Viewbox` to `Stretch="Fill"` horizontally with a fixed vertical scale | Done — `CpuStressView.xaml` |
 
 ### Pass E — Coherence cleanup (only after A–D)
 

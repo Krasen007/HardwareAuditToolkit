@@ -44,5 +44,6 @@ public class CpuStressFaultInjectionTests
         public void Stop() { }
         public void Dispose() { }
         public IReadOnlyList<SensorReading> ReadAll() => [];
+        public string? UnavailableReason => null;
     }
 }

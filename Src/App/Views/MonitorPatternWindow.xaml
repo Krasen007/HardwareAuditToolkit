@@ -26,7 +26,10 @@
                     Foreground="White" Background="#2D2D30"
                     BorderBrush="#555555" BorderThickness="1"
                     Cursor="Hand" Click="BackButton_Click" />
-            <views:ExitOverlay Margin="10,0,0,0" />
+            <!-- Exit Test is hidden in fullscreen pattern mode: the operator should
+                 only see "Back to controls", which returns to the monitor screen
+                 without cancelling the test. The global Ctrl+E hook still works. -->
+            <views:ExitOverlay Margin="10,0,0,0" Visibility="Collapsed" />
         </StackPanel>
     </Grid>
 </Window>

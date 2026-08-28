@@ -35,6 +35,7 @@ Keys outside the layout are ignored (`KeyboardModuleTests` covers this).
 
 ```csharp
 // Confirm()
+PromoteToConfirmed();
 if (missing.Count == 0)
 {
     Findings.Add("Operator confirmed: every expected key registered at least once.");
@@ -43,25 +44,21 @@ if (missing.Count == 0)
 else
 {
     Findings.Add($"Operator confirmed, but {missing.Count} key(s) were never pressed: {…}.");
-    status = TestStatus.Warning;
+    status = TestStatus.Passed;
 }
 ```
 
 | Outcome | Trigger |
 |---|---|
-| `Passed` | operator confirms **and** all 104 keys registered |
-| `Warning` | operator confirms with keys still untested |
+| `Passed` | operator confirms (coverage is recorded as a finding, not a verdict) |
 | `Failed` | operator presses **Flag defective key** |
 | `Cancelled` | `Ctrl+E`, exit overlay, navigate away, or the 30-minute cap |
 
 The module transitions to `AwaitingOperatorConfirmation` once all keys are pressed,
-but `Confirm` is enabled throughout `IsRunning` — so the operator can confirm early
-and land on `Warning`.
-
-**This is the `Warning` the operator complained about** ([`../../todo.md`](../../todo.md)
-item 1): they confirmed the keyboard works and the tool overrode them. Note that
-confirming with *zero* keys pressed also yields `Warning`, not `Failed`. Resolution
-depends on open decision [D2](../plans/open-decisions.md).
+but `Confirm` is enabled throughout `IsRunning` — so the operator can confirm early.
+Operator judgment is authoritative: confirming with missing keys records the missing
+keys in the finding but resolves as `Passed`. This fixes the `todo.md` item 1
+override where the tool previously forced `Warning` against the operator's attestation.
 
 ## Esc is data, not an exit
 
@@ -105,8 +102,9 @@ calls `CancelModule` on disposal — which is why walking away records `Cancelle
 ## Tests
 
 `Src/Tests/KeyboardModuleTests.cs` — 8 methods over a `FakeRawKeyboardInput`:
-layout uniqueness and labels, all-keys→`Passed`, missing-keys→`Warning`,
-flag→`Failed`, cancel→`Cancelled` with capture stopped, out-of-layout keys ignored,
-and the repeat counter. One is a DI-registration check.
+layout uniqueness and labels, all-keys→`Passed`, missing-keys→`Passed` with a
+finding listing the untested keys, flag→`Failed`, cancel→`Cancelled` with capture
+stopped, out-of-layout keys ignored, and the repeat counter. One is a DI-registration
+check.
 
 Untested: the WPM/accuracy maths in the view model.

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Threading;
 using CommunityToolkit.Mvvm.Messaging;
@@ -30,6 +31,14 @@ namespace HardwareAuditToolkit.Core.Modules;
 public sealed class CpuStressModule : ITestModule
 {
     public const int DefaultDurationSeconds = 300; // §8 conservative fixed cap.
+
+    private const uint ES_CONTINUOUS = 0x80000000;
+    private const uint ES_DISPLAY_REQUIRED = 0x00000002;
+    private const uint ES_SYSTEM_REQUIRED = 0x00000001;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetThreadExecutionState(uint esFlags);
 
     private readonly ISensorProvider _sensors;
     private readonly Action<CancellationToken> _workerBody;
@@ -117,6 +126,8 @@ public sealed class CpuStressModule : ITestModule
             Findings.Clear();
             OperatorActions.Clear();
             Artifacts.Clear();
+
+            SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
 
             int cores = Environment.ProcessorCount;
             _coreCount = cores;
@@ -255,6 +266,16 @@ public sealed class CpuStressModule : ITestModule
         PublishTelemetry(running: false, finalStatus);
         var cb = _onComplete;
         _onComplete = null;
+
+        try
+        {
+            SetThreadExecutionState(ES_CONTINUOUS);
+        }
+        catch
+        {
+            // Best-effort: restore normal power policy.
+        }
+
         return cb;
     }
 
@@ -317,6 +338,7 @@ public sealed class CpuStressModule : ITestModule
     {
         double? load = null;
         var temps = new List<float?>();
+        string? sensorUnavailableReason = _sensors.UnavailableReason;
         try
         {
             foreach (var reading in _sensors.ReadAll())
@@ -353,6 +375,7 @@ public sealed class CpuStressModule : ITestModule
             CoreTempsCelsius = temps,
             Running = running,
             FinalStatus = final,
+            SensorUnavailableReason = sensorUnavailableReason,
         });
     }
 

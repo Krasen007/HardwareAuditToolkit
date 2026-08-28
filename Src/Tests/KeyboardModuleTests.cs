@@ -83,7 +83,7 @@ public class KeyboardModuleTests
     }
 
     [Fact]
-    public void Module_SomeKeysMissingThenConfirm_Warning()
+    public void Module_SomeKeysMissingThenConfirm_PassedWithFinding()
     {
         var module = BuildModule(out var fake, out var orchestrator);
         Assert.True(orchestrator.TryStartModule("keyboard", out _));
@@ -96,8 +96,10 @@ public class KeyboardModuleTests
         }
 
         module.Confirm();
-        Assert.Equal(TestStatus.Warning, GetSessionResult(orchestrator).Status);
+        var result = GetSessionResult(orchestrator);
+        Assert.Equal(TestStatus.Passed, result.Status);
         Assert.True(fake.Stopped);
+        Assert.Contains(result.Findings, f => f.Contains("key(s) were never pressed"));
     }
 
     [Fact]

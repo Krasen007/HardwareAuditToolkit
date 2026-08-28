@@ -82,11 +82,11 @@ independently:
 
 | Module | Exclusive | Starts | Passes when |
 |---|---|---|---|
-| Keyboard | yes | on screen load | operator confirms **and** all 104 ANSI keys registered; otherwise `Warning` |
+| Keyboard | yes | on screen load | operator confirms (coverage recorded as a finding, not a verdict) |
 | Mouse | yes | on screen load | operator confirms (no coverage requirement) |
 | Monitor | yes | on screen load | operator confirms patterns render correctly |
 | System Info | no | on screen load | WMI inventory collected |
-| CPU Stress | yes | **explicit Start** | the full target duration elapses (300s cap) |
+| CPU Stress | yes | **explicit Start** | the full target duration elapses (300s cap); display sleep is prevented during the run |
 
 Perceptual checks record the operator's confirmation as the status, by design —
 there is no objective pass criterion for monitor uniformity. Keyboard coverage is
@@ -122,7 +122,6 @@ These are real and documented rather than forgotten. See
   every call site passes a hardcoded constant, so all failures read identically.
 - **`SessionCheckpointStore` is write-only** — no code reads a checkpoint back,
   so the stated crash-recovery guarantee is not implemented.
-- **No display-sleep prevention** during the five-minute burn-in.
 - **No persistent header.** Each view carries its own copy of the exit overlay and
   its own "Back to dashboard" button.
 

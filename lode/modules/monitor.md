@@ -41,17 +41,17 @@ rather than retrofitted.
 |---|---|
 | `Passed` | operator presses **Confirm patterns OK** |
 | `Failed` | operator presses **Flag defect** |
-| `Cancelled` | `Ctrl+E`, exit overlay (**including from the pattern window**), navigate away, or the cap |
+| `Cancelled` | `Ctrl+E`, exit overlay from the control screen, navigate away, or the cap |
 
 Perceptual check by design — architecture §5 says the operator's confirmation *is*
 the status for monitor uniformity. There is no objective criterion available.
 
-## The Exit-cancels bug
+## The Exit-cancels bug — mitigated
 
 [`../../todo.md`](../../todo.md) item 2, traced:
 
 ```
-ExitOverlay button (present in MonitorPatternWindow)
+ExitOverlay button (was present in MonitorPatternWindow)
   → ExitRequestedMessage
   → App.HandleExitRequested
   → orchestrator.CancelAll()
@@ -59,7 +59,7 @@ ExitOverlay button (present in MonitorPatternWindow)
   → StopInternal(TestStatus.Cancelled, "Monitor test cancelled.")
 ```
 
-So the operator who uses "Exit Test" from a fullscreen pattern gets a report saying
+So the operator who used "Exit Test" from a fullscreen pattern got a report saying
 the monitor test was **cancelled** — even though they just finished looking at every
 pattern. "Back to controls" (`Close()`) does not cancel and leaves the test
 `Running`, which is the intended path.
@@ -67,9 +67,9 @@ pattern. "Back to controls" (`Close()`) does not cancel and leaves the test
 Two adjacent buttons, visually equivalent, opposite report outcomes. Compounded by
 auto-start: merely opening the control screen and leaving also stamps `Cancelled`.
 
-Resolution depends on open decision [D1](../plans/open-decisions.md); the immediate
-mitigation the operator asked for is to show **only** "Back to controls" in
-fullscreen.
+**Mitigation applied:** the `ExitOverlay` is hidden (`Visibility="Collapsed"`) in
+`MonitorPatternWindow`. The operator sees only **"Back to controls"**, which returns
+to the monitor screen without cancelling. The global `Ctrl+E` hook still works.
 
 ## DDC/CI brightness
 
@@ -109,8 +109,8 @@ every other finding in the product.
 ## Known defects
 
 | Defect | Detail | Fix |
-|---|---|---|
-| Exit from fullscreen records `Cancelled` | The operator's own complaint. | B1 / D1 |
+|---|---|
+| ~~Exit from fullscreen records `Cancelled`~~ | ~~The operator's own complaint.~~ | Fixed — `ExitOverlay` hidden in `MonitorPatternWindow`; only "Back to controls" is visible |
 | Auto-start on `Loaded` | Opening and leaving the control screen stamps `Cancelled`. | B3 |
 | Start button dead after auto-start | `CanStart => !IsRunning && !IsCompleted`, and **Reset** is disabled while running, so there is no clean re-run path. | B3 |
 | Brightness changes unrecorded | `ApplyBrightness` adds no finding or measurement. | C5 |

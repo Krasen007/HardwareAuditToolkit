@@ -36,6 +36,8 @@ public sealed class LibreHardwareMonitorSensorProvider : ISensorProvider
     private Timer? _timer;
     private bool _opened;
 
+    public string? UnavailableReason { get; private set; }
+
     public LibreHardwareMonitorSensorProvider()
     {
         try
@@ -43,10 +45,10 @@ public sealed class LibreHardwareMonitorSensorProvider : ISensorProvider
             _computer.Open();
             _opened = true;
         }
-        catch
+        catch (Exception)
         {
-            // Best-effort: no sensors available without sufficient privilege.
             _opened = false;
+            UnavailableReason = "Sensor access unavailable — run as administrator for core temperatures.";
         }
     }
 
@@ -78,6 +80,11 @@ public sealed class LibreHardwareMonitorSensorProvider : ISensorProvider
     {
         if (!_opened)
         {
+            WeakReferenceMessenger.Default.Send(new SensorReadingsMessage
+            {
+                Readings = [],
+                UnavailableReason = UnavailableReason,
+            });
             return;
         }
 

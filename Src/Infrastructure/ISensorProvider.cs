@@ -16,4 +16,10 @@ public interface ISensorProvider : IDisposable
 
     /// <summary>Latest normalized readings.</summary>
     IReadOnlyList<SensorReading> ReadAll();
+
+    /// <summary>
+    /// When sensors are unavailable, a human-readable reason (e.g. "run as
+    /// administrator for core temperatures"). Null when readings are present.
+    /// </summary>
+    string? UnavailableReason { get; }
 }
