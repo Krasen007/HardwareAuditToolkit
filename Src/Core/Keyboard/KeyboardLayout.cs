@@ -81,9 +81,9 @@ public static class KeyboardLayout
             ("F11", C(0x57), 1, 0),
             ("F12", C(0x58), 1, 0),
             // Top-right cluster sits directly above Ins/Home/PgUp (x ≈ 15.5–18.5).
-            ("PrSc", C(0x37, true), 1, 0.5),
-            ("Scr", C(0x46), 1, 0),
-            ("Pse", C(0x45, true), 1, 0));
+            ("PrtSc", C(0x37, true), 1, 0.5),
+            ("ScrLk", C(0x46), 1, 0),
+            ("Pause", C(0x45, true), 1, 0));
 
         // Row 1 — number row + nav (Ins/Home/PgUp) + numpad (NumLk / * -).
         Row(1,
@@ -100,11 +100,11 @@ public static class KeyboardLayout
             ("0", C(0x0B), 1, 0),
             ("-", C(0x0C), 1, 0),
             ("=", C(0x0D), 1, 0),
-            ("Bksp", C(0x0E), 2, 0),
-            ("Ins", C(0x52, true), 1, 0.5),
+            ("Backspace", C(0x0E), 2, 0),
+            ("Insert", C(0x52, true), 1, 0.5),
             ("Home", C(0x47, true), 1, 0),
-            ("PgUp", C(0x49, true), 1, 0),
-            ("Num", C(0x45), 1, 0.5),
+            ("Page Up", C(0x49, true), 1, 0),
+            ("NumLk", C(0x45), 1, 0.5),
             ("/", C(0x35, true), 1, 0),
             ("*", C(0x37), 1, 0),
             ("-", C(0x4A), 1, 0));
@@ -125,9 +125,9 @@ public static class KeyboardLayout
             ("[", C(0x1A), 1, 0),
             ("]", C(0x1B), 1, 0),
             ("\\", C(0x2B), 1.5, 0),
-            ("Del", C(0x53, true), 1, 0.5),
+            ("Delete", C(0x53, true), 1, 0.5),
             ("End", C(0x4F, true), 1, 0),
-            ("PgDn", C(0x51, true), 1, 0),
+            ("Page Down", C(0x51, true), 1, 0),
             ("7", C(0x47), 1, 0.5),
             ("8", C(0x48), 1, 0),
             ("9", C(0x49), 1, 0),
@@ -135,7 +135,7 @@ public static class KeyboardLayout
 
         // Row 3 — home row + numpad (4 5 6).
         Row(3,
-            ("Caps", C(0x3A), 1.75, 0),
+            ("CapsLk", C(0x3A), 1.75, 0),
             ("A", C(0x1E), 1, 0),
             ("S", C(0x1F), 1, 0),
             ("D", C(0x20), 1, 0),
@@ -154,7 +154,7 @@ public static class KeyboardLayout
 
         // Row 4 — bottom letter row + Up arrow + numpad (1 2 3 Enter spanning 2).
         Row(4,
-            ("LSh", C(0x2A), 2.25, 0),
+            ("LShift", C(0x2A), 2.25, 0),
             ("Z", C(0x2C), 1, 0),
             ("X", C(0x2D), 1, 0),
             ("C", C(0x2E), 1, 0),
@@ -165,25 +165,25 @@ public static class KeyboardLayout
             (",", C(0x33), 1, 0),
             (".", C(0x34), 1, 0),
             ("/", C(0x35), 1, 0),
-            ("RSh", C(0x36), 2.75, 0),
+            ("RShift", C(0x36), 2.75, 0),
             ("Up", C(0x48, true), 1, 1.5),
             ("1", C(0x4F), 1, 1.5),
             ("2", C(0x50), 1, 0),
             ("3", C(0x51), 1, 0),
-            ("Ent", C(0x1C, true), 1, 0));
+            ("Enter", C(0x1C, true), 1, 0));
 
         // Row 5 — modifiers + Left/Down/Right + numpad (0 .)
         Row(5,
-            ("LCt", C(0x1D), 1.25, 0),
-            ("LWi", C(0x5B, true), 1.25, 0),
-            ("LAl", C(0x38), 1.25, 0),
-            ("Spc", C(0x39), 6.25, 0),
-            ("RAl", C(0x38, true), 1.25, 0),
-            ("RWi", C(0x5C, true), 1.25, 0),
-            ("RCt", C(0x1D, true), 1.25, 0),
-            ("Lf", C(0x4B, true), 1, 1.75),
-            ("Dn", C(0x50, true), 1, 0),
-            ("Rt", C(0x4D, true), 1, 0),
+            ("LCtrl", C(0x1D), 1.25, 0),
+            ("LWin", C(0x5B, true), 1.25, 0),
+            ("LAlt", C(0x38), 1.25, 0),
+            ("Space", C(0x39), 6.25, 0),
+            ("RAlt", C(0x38, true), 1.25, 0),
+            ("RWin", C(0x5C, true), 1.25, 0),
+            ("RCtrl", C(0x1D, true), 1.25, 0),
+            ("Left", C(0x4B, true), 1, 1.75),
+            ("Down", C(0x50, true), 1, 0),
+            ("Right", C(0x4D, true), 1, 0),
             ("0", C(0x52), 2, 0.5),
             (".", C(0x53), 1, 0));
 

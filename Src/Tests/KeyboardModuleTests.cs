@@ -59,7 +59,7 @@ public class KeyboardModuleTests
         // Esc must be recognized as ordinary test data (architecture §6).
         Assert.Equal("Esc", KeyboardLayout.GetLabel(0x01));
         // A representative extended key (right Ctrl, E0 0x1D) must resolve uniquely.
-        Assert.Equal("RCt", KeyboardLayout.GetLabel(0xE01D));
+        Assert.Equal("RCtrl", KeyboardLayout.GetLabel(0xE01D));
     }
 
     [Fact]
