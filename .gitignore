@@ -14,3 +14,6 @@ Src/App/bin/publish/
 # Test results
 TestResults/
 *.trx
+
+# Lode session scraps (AI project memory: only tmp/ is transient)
+lode/tmp/

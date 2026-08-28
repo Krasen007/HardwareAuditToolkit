@@ -1,24 +1,43 @@
 # Hardware Audit Toolkit
 
-Portable sysadmin hardware audit tool — v1 scope: keyboard, mouse, monitor,
-system info, and CPU stress testing. Portable, offline-first, no admin
-required, no database. See `hardware-audit-toolkit-architecture.md` for the
-full architecture and phase plan.
+A portable WPF tool a technician runs on an unfamiliar Windows machine to verify
+its keyboard, mouse, monitor, CPU and inventory, then export an auditable report.
+
+Runs from a USB stick. No installer, no admin, no database, no network.
+
+- **Architecture & rationale:** [`docs/hardware-audit-toolkit-architecture.md`](docs/hardware-audit-toolkit-architecture.md)
+- **Security-team handout:** [`docs/DeploymentNote.md`](docs/DeploymentNote.md)
+- **Known design defects:** [`../taste-audit.md`](../taste-audit.md)
+- **Open operator complaints:** [`../todo.md`](../todo.md)
+- **AI project memory:** [`../lode/lode-map.md`](../lode/lode-map.md)
+
+## Confirmed constraints
+
+| Decision | Choice |
+|---|---|
+| Deployment | Portable single self-contained `.exe`; folder build kept as fallback |
+| Elevation | Never required. Capabilities that need it degrade to an honest "unavailable" |
+| Storage | Flat JSON per session. No SQL/SQLite/embedded DB |
+| v1 scope | Keyboard, mouse, monitor, system info, CPU stress. Nothing else |
 
 ## Solution layout
 
 ```
 Src/
   HardwareAuditToolkit.sln
-  Core/            # contracts, session models, orchestrator, event-bus messages,
-                   #   keyboard layout/state, and the Application-layer test modules
-                   #   (no UI; depends on Infrastructure only via interfaces)
-  Infrastructure/  # Win32 wrappers, WMI/CIM, LibreHardwareMonitor sensor adapter
-  App/             # WPF host: DI shell, single-instance enforcer, app manifest, publish profiles
+  Core/            # contracts, AuditSession, TestOrchestrator, event-bus messages,
+                   #   keyboard layout, reporting, and the five ITestModule
+                   #   implementations. No UI; reaches Infrastructure via interfaces only
+  Infrastructure/  # Win32 wrappers (raw input, DDC/CI), WMI/CIM inventory,
+                   #   LibreHardwareMonitor sensor adapter, diagnostics log
+  App/             # WPF host: DI composition root, shell, views/view models,
+                   #   single-instance enforcer, DPI manifest, publish profiles
   Tests/           # xunit
-docs/
-  DeploymentNote.md  # §9.1 one-pager for security teams (hash, extraction path, signing)
+  docs/
 ```
+
+Project references flow one way: `App → Core → Infrastructure`. Core carries no
+UI and no directly-authored P/Invoke.
 
 ## Build & test
 
@@ -27,179 +46,124 @@ dotnet build Src\HardwareAuditToolkit.sln
 dotnet test  Src\HardwareAuditToolkit.sln
 ```
 
-The solution builds with **zero warnings** and the full xunit suite passes on a
-clean `dotnet test`.
+Current state: **zero warnings, 61 xunit tests passing.** `F5` in VS Code launches
+the WPF app (see `.vscode/launch.json`).
 
 ## Publish
 
 ```powershell
-# Primary: portable, self-contained, single-file .exe (§9.1)
+# Primary: portable, self-contained, single-file .exe
 dotnet publish Src\App\HardwareAuditToolkit.App.csproj -c Release -p:PublishProfile=PortableSingleFile
-# Fallback: self-contained folder build
+
+# Fallback for sites that block single-file: self-contained folder
 dotnet publish Src\App\HardwareAuditToolkit.App.csproj -c Release -p:PublishProfile=PortableFolder
 ```
 
-Outputs land in `Src\App\bin\publish\`.
+Outputs land in `Src\App\bin\publish\`. Pass `-p:VerifyPublishArtifacts=true` to
+assert the single-file profile emits exactly one `.exe`.
 
-## Phase status
+## What the app does today
 
-- **Phase 0 (scaffolding) — done:** solution, contracts in Core, DI shell,
-  Per-Monitor V2 manifest, `Global\` single-instance enforcement, publish
-  profiles, orchestrator unit tests.
-- **Phase 1 (shell, navigation & exit) — done:** main window with persistent
-  header + dashboard, DI shell, `Global\` single-instance enforcement, Per-Monitor
-  V2 manifest (§9.4), global Ctrl+E low-level hook on its **own dedicated thread**
-  (§9.2) routed to the orchestrator's exit flow, reusable **Exit Test** overlay (§6),
-  the `AuditSession` model, a hidden message-only window wired for
-  `WM_INPUT_DEVICE_CHANGE`/`WM_DISPLAYCHANGE` (§9.5), a navigation service, and
-  orchestrator unit tests (12 passing).
-- **Phase 2 (system info & live sensors) — done:** `SystemInfoProvider` (WMI) +
-  `LibreHardwareMonitorSensorProvider` (on the event bus via `SensorReadingsMessage`),
-  `SystemInfoModule` (non-exclusive) and the §8 CPU stress module (exclusive, one
-  `BelowNormal` worker per core, 5-min cap, manual Stop, live telemetry), plus
-   `SystemInfoView`/`CpuStressView` wired through `NavigationService` + `MainWindow`
-   data templates. 16 tests pass (orchestrator + new `Phase2ModuleTests`).
-- **Phase 3 (keyboard test) — done:** `RawKeyboardInput` (Infrastructure, native
-   message-only window, scan-code based) + ANSI `KeyboardLayout`; exclusive
-   `KeyboardTestModule` (per-key untested→pressed→confirmed, operator confirmation
-   is the recorded status); `KeyboardTestView`/`KeyboardTestModuleViewModel` driven
-   through the orchestrator and the event bus (`KeyEventMessage`/`KeyboardTestStatusMessage`);
-   WPM/accuracy sub-screen launched from within the module (not a separate
-   exclusive module); `Esc`-is-just-data (no exit handler, `Ctrl+E` still exits via
-   the independent hook); raw-input registration torn down on `Cancel()` **and** on
-   view-model disposal so navigation doesn't leak capture. 24 tests pass
-   (`TestOrchestratorTests` + `Phase2ModuleTests` + `KeyboardModuleTests`).
-- **Phase 4 (mouse test) — done:** `RawMouseInput` (Infrastructure, native
-   message-only window, scan-agnostic button/wheel/delta stream) + `MouseTestModule`
-   (exclusive, one raw-input registration torn down on `Cancel()` **and** view-model
-   disposal so navigation doesn't leak capture); `MouseTestModuleViewModel`
-   + `MouseTestView` via `NavigationService` + `MainWindow` data templates. Click /
-   scroll / drag-hold are logged with per-button counters; a drag is distinctly
-   flagged from a click ("released mid-drag — drop detected"), and a mouse unplug
-   mid-hold is recorded as an incomplete drag/drop finding (§9.5, no freeze). A
-   duck-outline tracing sub-screen (held-button trace scored by path coverage)
-   launches from within the module like the keyboard WPM sub-screen. 30 tests pass
-   (orchestrator + `KeyboardModuleTests` + `Phase2ModuleTests` + `MouseModuleTests`).
-- **Phase 5 (monitor test) — done:** `DdcCiControl` (Infrastructure, `dxva2.dll`
-   wrapper) with graceful "unsupported" handling; exclusive `MonitorTestModule`
-   (DDC/CI brightness is best-effort and degrades to a clean "unsupported"
-   reading, so the module can still Pass on operator confirmation alone);
-   `MonitorTestModuleViewModel` + `MonitorTestView` via `NavigationService` +
-   `MainWindow` data templates; a live multi-monitor picker that reacts to
-   `WM_DISPLAYCHANGE` (`DeviceTopologyChangedMessage`); and a fullscreen
-   `MonitorPatternWindow` using the auto-hiding Exit overlay + Ctrl+E (§6) placed
-   on the selected display via `SetWindowPos` in raw device pixels so it lands
-   correctly across mixed-DPI setups (§9.4). 36 tests pass (orchestrator +
-   `KeyboardModuleTests` + `Phase2ModuleTests` + `MouseModuleTests` +
-   `MonitorModuleTests`).
-- **Phase 6 (reporting) — done:** `SessionExporter` (Core, no UI/Win32 refs)
-  serializes `AuditSession` to a structured JSON file (`TestStatus` written as a
-  string enum) plus a self-contained, printable HTML report (`HtmlReportTemplate`);
-  the App `ReportExportService` runs the full write-path fallback cascade (§9.6:
-  portable app dir → Desktop → %TEMP% → manual folder picker → clipboard modal),
-  each candidate probed with a quick write-test so a vanishing volume (e.g. the USB
-  stick pulled mid-write) is caught without losing the in-memory session; an
-   always-available **Export Report** button lives in the persistent header (and on
-   the dashboard). 46 tests pass (`TestOrchestratorTests` + `Phase2ModuleTests` +
-   `KeyboardModuleTests` + `MouseModuleTests` + `MonitorModuleTests` +
-   `ReportExportTests`).
-- **Phase 7 (polish & refactor) — done:** hook/resource cleanup audit (raw-input and
-   `WndProc` run loops torn down on `Cancel()` and view-model disposal, so no capture
-   leaks across navigation); global fault containment in `App.xaml.cs`
-   (`DispatcherUnhandledException` keeps a UI-thread fault from ending the audit and
-   logs every other failure, architecture §9.7); module run-loop guarding so a throw on
-   a background thread — the CPU-stress workers, the raw keyboard/mouse capture threads,
-   the Ctrl+E hook thread, and the device-change message-only window — degrades to
-   "unavailable"/`Failed` instead of terminating the process; and per-call best-effort
-   degradation in the WMI/DDC-CI/sensor providers. **Diagnostics are now observable on a
-   published build**: every fault path logs to `%LOCALAPPDATA%\HardwareAuditToolkit\diagnostics.log`
-   via `IDiagnosticLog`/`FileDiagnosticLog` (never throws), injected into `App.xaml.cs`,
-   `RawKeyboardInput`, `RawMouseInput`, `ExitHotkeyService`, and `DeviceChangeService` — so the
-   §9.7 "a fault is never silent" claim holds without a debugger attached. **Crash persistence**:
-   `TestOrchestrator` writes a durable JSON checkpoint (`ISessionCheckpointStore`/`SessionCheckpointStore`
-   under `%LOCALAPPDATA%\HardwareAuditToolkit`) after every module completes and on app exit, so a
-   forced termination can't lose findings before an explicit export. **Export correctness**:
-   `ReportExportService.Export()` only stamps `CompletedAt` once a durable export actually lands.
-   60 tests pass, including App-layer coverage (`ReportExportServiceTests`, `NavigationServiceTests`),
-   the CPU fault-injection test (`CpuStressFaultInjectionTests`), and checkpoint tests
-   (`OrchestratorCheckpointTests`, `SessionCheckpointTests`). An opt-in `VerifySingleFileArtifact`
-   publish target asserts the single-file build produces exactly one `.exe` (§9.1). **Manual
-   pre-ship items remain (cannot be satisfied in code):** Authenticode code-signing via the org PKI
-   (§9.1), an EDR pass (e.g. Microsoft Defender for Endpoint) before wide rollout, and a manual walk
-   of every exit path from every screen, including mid-CPU-stress.
-- **Usability pass (post-Phase 7) — done:** repeated-key press clarity in the keyboard
-   test (a per-key press counter + red repeat badge on tiles pressed more than once; the
-   **key-press log** is now a pinned, non-scrolling newest-first bar at the bottom of the
-   screen, mirroring the mouse test's pinned log rather than a scrollable page section —
-   `KeyEventMessage.PressCount`/`LogLine`, `KeyboardTestModuleViewModel.LogLines`,
-   `KeyViewModel.ShowCountBadge`); the monitor pattern window now **cycles to the next
-   colour on any click** on the pattern surface (wrapping, with a `N/M — pattern` readout
-   and each advanced pattern recorded via `MonitorPatternWindow`'s advance callback); and the
-   CPU stress screen **does not auto-start** the burn-in on load — instead it renders a
-   **live dual-line graph** of CPU load % (gold) and maximum core temperature (blue) that is
-   **already plotting the ambient/current load from the moment the screen opens** (fed by the
-   ambient `SensorReadingsMessage` broadcasts), continuing through the burn-in via
-   `StressTelemetryMessage` samples (`CpuStressModuleViewModel.LoadPoints`/`TempPoints`,
-   reflexive `CpuStressView` chart); the operator presses **Start test** to begin the run.
-   61 xunit tests pass (a keyboard repeat-counter case added).
+**Shell.** A dashboard of five module cards. Selecting one replaces the window
+content with that module's screen; the outgoing view model is disposed so
+event-bus subscriptions and raw-input registrations never leak across navigation.
 
----
+**Exit paths.** Every screen offers a mouse-only and a keyboard-only way out,
+independently:
 
-## Recent code-quality cleanup & decisions
+- `Ctrl+E` — global low-level hook on its own dedicated thread, so it stays
+  responsive under full CPU load.
+- **Exit Test** overlay — present on all six views and on the fullscreen pattern
+  window (where it auto-hides after 3s of no mouse movement).
+- **Native close (X)** — the only path that actually quits the application.
+  `Ctrl+E` and the overlay cancel the running module and return to the dashboard.
 
-A pass resolved every open analyzer diagnostic (IDE / CA / Roslynator / SYSLIB) so
-the solution builds with **zero warnings, zero errors** (60 xunit tests passing).
-The style rules applied are now the project's house style:
+**Modules.**
 
-- **Collection expressions** — target-typed `[]` / `[...]` in place of
-  `new List<T>()`, `Array.Empty<T>()`, `new[] { ... }`, and `new()` (IDE0028/
-  IDE0300/IDE0301).
-- **Primary constructors & auto-properties** — e.g. `CpuStressModule(ISensorProvider
-  sensors)` replaces an explicit constructor + backing field where there is no logic
-  in between (IDE0290/RCS1085).
-- **Explicit precedence parentheses** — `a + (b * c)` and
-  `(a * b) + (c * d)` emphasize a higher-precedence operand of a lower-precedence
-  operator (RCS1123).
-- **Single-char `string.Contains(char)`** and removal of redundant `!` where the
-  target API already accepts null (CA1847/RCS1249).
+| Module | Exclusive | Starts | Passes when |
+|---|---|---|---|
+| Keyboard | yes | on screen load | operator confirms **and** all 104 ANSI keys registered; otherwise `Warning` |
+| Mouse | yes | on screen load | operator confirms (no coverage requirement) |
+| Monitor | yes | on screen load | operator confirms patterns render correctly |
+| System Info | no | on screen load | WMI inventory collected |
+| CPU Stress | yes | **explicit Start** | the full target duration elapses (300s cap) |
 
-### Interop decision: `DllImport` stays for non-blittable P/Invokes (SYSLIB1054 suppressed)
+Perceptual checks record the operator's confirmation as the status, by design —
+there is no objective pass criterion for monitor uniformity. Keyboard coverage is
+the one objective criterion in the product.
 
-`SYSLIB1054` recommends migrating P/Invokes to `LibraryImport`. **We keep
-`DllImport`** for the Win32 / `dxva2.dll` wrappers (`DeviceChangeService`,
-`DdcCiControl`, `RawKeyboardInput`, `RawMouseInput`) because the `LibraryImport`
-source generator cannot marshal these signatures: non-blittable structs carrying
-`string` / `ByValTStr` members (`Wndclassex`, `MONITORINFOEX`, `PHYSICAL_MONITOR`)
-and a delegate callback (`EnumDisplayMonitors`). The suggestion is suppressed per
-file (`#pragma warning disable/restore SYSLIB1054`) behind a justification comment.
-A future migration would require making the native types blittable and enabling
-`AllowUnsafeBlocks`.
+**Reporting.** `Export Report` lives on the dashboard. It writes a JSON session
+file plus a self-contained printable HTML report through the §9.6 write-path
+cascade: app directory → Desktop → `%TEMP%` → manual folder picker → clipboard.
+Each candidate is probed with a real write-test first, so a USB stick pulled
+mid-write costs nothing and the in-memory session survives.
 
-**Blittable P/Invokes** — e.g. `SetWindowPos` in `MonitorPatternWindow` — are
-migrated to `LibraryImport` (which requires `<AllowUnsafeBlocks>true</AllowUnsafeBlocks>`
-in the App project). These use only blittable types (`IntPtr`, `int`, `uint`,
-`bool`) that the source generator can marshal without the non-blittable struct
-limitations.
+**Fault containment.** A failing WMI/DDC-CI/sensor call degrades to "unavailable"
+rather than crashing. Background run loops — CPU stress workers, raw input capture
+threads, the `Ctrl+E` hook thread, the device-change window — are guarded at source
+so a throw becomes `Failed`, not a dead process. Every fault path writes to
+`%LOCALAPPDATA%\HardwareAuditToolkit\diagnostics.log`, so diagnostics are
+observable on a published build without a debugger.
 
----
+## Known gaps
 
-### Conventions to follow
+These are real and documented rather than forgotten. See
+[`../taste-audit.md`](../taste-audit.md) for full evidence and a prioritised plan.
 
-- MVVM via `CommunityToolkit.Mvvm` (`[ObservableProperty]`, `[RelayCommand]`);
-  DI via `Microsoft.Extensions.DependencyInjection`.
-- Add xunit tests under `Src/Tests/`. New `Core` logic mirrors
-  `TestOrchestratorTests.cs`; new module/orchestrator integration mirrors
-  `Phase2ModuleTests.cs` (compose via DI, assert terminal status). A unit test for
-  the scan-code→key-id layout mapping is high-value and OS-independent.
-- Verify with `dotnet build Src\HardwareAuditToolkit.sln` and
-  `dotnet test Src\HardwareAuditToolkit.sln`; **F5** in VS Code launches the WPF app
-  (see `.vscode/launch.json`). On-hardware verification required for the "every
-  physical key registers" DoD.
-- Use the analyzer-driven house style in ["Recent code-quality cleanup &
-  decisions"](#recent-code-quality-cleanup--decisions) (collection expressions,
-  primary constructors, explicit-precedence parentheses).
-- Interop P/Invoke: keep `DllImport` and do **not** convert to `LibraryImport` for
-  the existing Win32 / `dxva2.dll` signatures that carry non-blittable structs or a
-  delegate callback — `SYSLIB1054` is already suppressed with justification (see
-  the interop decision above).
+- **The report understates what was not tested.** Only modules that were *started*
+  appear, so a session where just System Info auto-ran exports as
+  `Overall status: Passed` without mentioning the four untested devices.
+- **A first export stamps itself "in progress"**, because `CompletedAt` is set
+  after serialisation.
+- **`TestStatus.Skipped` and `TestStatus.Unsupported` are never assigned**, and
+  `Cancelled` covers five unrelated situations, including deliberately stopping a
+  burn-in early.
+- **The operator cannot describe a defect.** `FlagDefect(note)` accepts text, but
+  every call site passes a hardcoded constant, so all failures read identically.
+- **`SessionCheckpointStore` is write-only** — no code reads a checkpoint back,
+  so the stated crash-recovery guarantee is not implemented.
+- **No display-sleep prevention** during the five-minute burn-in.
+- **No persistent header.** Each view carries its own copy of the exit overlay and
+  its own "Back to dashboard" button.
 
+**Manual pre-ship items** (cannot be satisfied in code): Authenticode signing via
+the org PKI, an EDR pass before wide rollout, and a manual walk of every exit path
+from every screen including mid-CPU-stress.
+
+## Conventions
+
+- **MVVM** via `CommunityToolkit.Mvvm` (`[ObservableProperty]`, `[RelayCommand]`);
+  its `WeakReferenceMessenger` doubles as the in-process event bus.
+- **DI** via `Microsoft.Extensions.DependencyInjection`. Modules and providers are
+  singletons; **module view models must be transient** — they subscribe in their
+  constructor and unsubscribe on disposal, so a singleton would stay dead after
+  the first navigation away.
+- **Teardown twice.** Anything holding an OS resource is released both in
+  `Cancel()` and in view-model `Dispose()`.
+- **House style** (analyzer-enforced, zero warnings): collection expressions
+  (`[]`, `[...]`) over `new List<T>()`/`Array.Empty<T>()`; primary constructors
+  where no logic sits between parameter and field; explicit precedence parentheses
+  (`a + (b * c)`); `string.Contains(char)` for single characters.
+- **Tests** live in `Src/Tests/`. New Core logic mirrors `TestOrchestratorTests.cs`;
+  module/orchestrator integration mirrors `Phase2ModuleTests.cs` (compose via DI,
+  assert terminal status). Infrastructure is faked (`FakeRawKeyboardInput`,
+  `FakeRawMouseInput`, `FakeDdc`) — no test touches real hardware.
+
+### Interop: `DllImport` stays for non-blittable P/Invokes
+
+`SYSLIB1054` recommends `LibraryImport`. **Keep `DllImport`** for the Win32 /
+`dxva2.dll` wrappers in `DeviceChangeService`, `DdcCiControl`, `RawKeyboardInput`
+and `RawMouseInput`: the source generator cannot marshal non-blittable structs
+carrying `string`/`ByValTStr` members (`Wndclassex`, `MONITORINFOEX`,
+`PHYSICAL_MONITOR`) or the `EnumDisplayMonitors` delegate callback. The warning is
+suppressed per file behind a justification comment. Migrating would require making
+the native types blittable.
+
+Blittable P/Invokes — e.g. `SetWindowPos` in `MonitorPatternWindow` — do use
+`LibraryImport` (which is why the App project sets `<AllowUnsafeBlocks>true`).
+
+### On-hardware verification
+
+Two definitions of done cannot be met by `dotnet test`: "every physical key
+registers" needs a real keyboard, and "patterns render at correct scale" needs a
+real mixed-DPI multi-monitor setup.
