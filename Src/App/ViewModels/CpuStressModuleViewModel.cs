@@ -242,7 +242,7 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
         double max = fixedMax ?? clean.Max();
         if (min == max)
         {
-            max += 1; // avoid a flat/undefined scale for a constant series
+            max++; // avoid a flat/undefined scale for a constant series
         }
 
         double span = max - min;

@@ -68,9 +68,6 @@ public static class KeyboardLayout
         // Row 0 — function row + PrtSc/Scroll/Pause (right cluster).
         Row(0,
             ("Esc", C(0x01), 1, 0),
-            ("PrSc", C(0x37, true), 1, 1),
-            ("Scr", C(0x46), 1, 0.5),
-            ("Pse", C(0x45, true), 1, 0.5),
             ("F1", C(0x3B), 1, 1),
             ("F2", C(0x3C), 1, 0),
             ("F3", C(0x3D), 1, 0),
@@ -82,7 +79,11 @@ public static class KeyboardLayout
             ("F9", C(0x43), 1, 0.5),
             ("F10", C(0x44), 1, 0),
             ("F11", C(0x57), 1, 0),
-            ("F12", C(0x58), 1, 0));
+            ("F12", C(0x58), 1, 0),
+            // Top-right cluster sits directly above Ins/Home/PgUp (x ≈ 15.5–18.5).
+            ("PrSc", C(0x37, true), 1, 0.5),
+            ("Scr", C(0x46), 1, 0),
+            ("Pse", C(0x45, true), 1, 0));
 
         // Row 1 — number row + nav (Ins/Home/PgUp) + numpad (NumLk / * -).
         Row(1,
@@ -130,7 +131,7 @@ public static class KeyboardLayout
             ("7", C(0x47), 1, 0.5),
             ("8", C(0x48), 1, 0),
             ("9", C(0x49), 1, 0),
-            ("+", C(0x4E), 1, 2));
+            ("+", C(0x4E), 1, 0));
 
         // Row 3 — home row + numpad (4 5 6).
         Row(3,
@@ -147,7 +148,7 @@ public static class KeyboardLayout
             (";", C(0x27), 1, 0),
             ("'", C(0x28), 1, 0),
             ("Enter", C(0x1C), 2.25, 0),
-            ("4", C(0x4B), 1, 6.5),
+            ("4", C(0x4B), 1, 4),
             ("5", C(0x4C), 1, 0),
             ("6", C(0x4D), 1, 0));
 
@@ -165,8 +166,8 @@ public static class KeyboardLayout
             (".", C(0x34), 1, 0),
             ("/", C(0x35), 1, 0),
             ("RSh", C(0x36), 2.75, 0),
-            ("Up", C(0x48, true), 1, 0.5),
-            ("1", C(0x4F), 1, 0.5),
+            ("Up", C(0x48, true), 1, 1.5),
+            ("1", C(0x4F), 1, 1.5),
             ("2", C(0x50), 1, 0),
             ("3", C(0x51), 1, 0),
             ("Ent", C(0x1C, true), 1, 0));
@@ -180,7 +181,7 @@ public static class KeyboardLayout
             ("RAl", C(0x38, true), 1.25, 0),
             ("RWi", C(0x5C, true), 1.25, 0),
             ("RCt", C(0x1D, true), 1.25, 0),
-            ("Lf", C(0x4B, true), 1, 0.5),
+            ("Lf", C(0x4B, true), 1, 1.75),
             ("Dn", C(0x50, true), 1, 0),
             ("Rt", C(0x4D, true), 1, 0),
             ("0", C(0x52), 2, 0.5),
