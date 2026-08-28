@@ -36,6 +36,7 @@ public sealed class SystemInfoProvider : IDisposable
             CollectOperatingSystem(snapshot);
             CollectBiosAndBoard(snapshot);
             CollectDisks(snapshot);
+            CollectMachineId(snapshot);
             snapshot.CapturedAt = DateTime.UtcNow;
             _cached = snapshot;
             return snapshot;
@@ -165,6 +166,39 @@ public sealed class SystemInfoProvider : IDisposable
                 }
 
                 s.Disks.Add(string.IsNullOrEmpty(size) ? model : $"{model} — {size}");
+            }
+        }
+        catch (ManagementException)
+        {
+            // Best-effort.
+        }
+    }
+
+    private static void CollectMachineId(SystemInfoSnapshot s)
+    {
+        try
+        {
+            using var searcher = new ManagementObjectSearcher("SELECT UUID FROM Win32_ComputerSystemProduct");
+            foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
+            {
+                s.MachineId = obj["UUID"]?.ToString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(s.MachineId))
+                {
+                    return;
+                }
+            }
+        }
+        catch (ManagementException)
+        {
+            // Best-effort.
+        }
+
+        try
+        {
+            using var searcher = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_BIOS");
+            foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
+            {
+                s.MachineId = obj["SerialNumber"]?.ToString()?.Trim();
             }
         }
         catch (ManagementException)

@@ -63,6 +63,12 @@ public class Phase2ModuleTests
         var result = provider.GetRequiredService<AuditSession>().Modules.Single(r => r.ModuleId == "system");
         Assert.True(result.Status is TestStatus.Passed or TestStatus.Warning,
             $"unexpected status {result.Status}");
+
+        if (result.Status == TestStatus.Passed)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(provider.GetRequiredService<AuditSession>().MachineId),
+                "MachineId should be populated when system info collection succeeds");
+        }
     }
 
     [Fact]

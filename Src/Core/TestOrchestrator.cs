@@ -282,6 +282,11 @@ public sealed class TestOrchestrator : IDisposable
             result.OperatorActions.AddRange(module.OperatorActions);
             result.Artifacts.AddRange(module.Artifacts);
 
+            if (module is HardwareAuditToolkit.Core.Modules.SystemInfoModule systemModule && systemModule.MachineId is { } machineId)
+            {
+                _session.MachineId = machineId;
+            }
+
             UpdateOverallStatus();
 
             // Crash persistence: after every module completes, write a durable
@@ -338,6 +343,11 @@ public sealed class TestOrchestrator : IDisposable
         result.Measurements.AddRange(entry.Module.Measurements);
         result.OperatorActions.AddRange(entry.Module.OperatorActions);
         result.Artifacts.AddRange(entry.Module.Artifacts);
+
+        if (entry.Module is HardwareAuditToolkit.Core.Modules.SystemInfoModule systemModule && systemModule.MachineId is { } machineId)
+        {
+            _session.MachineId = machineId;
+        }
 
         UpdateOverallStatus();
         _checkpoint?.Save(_session);

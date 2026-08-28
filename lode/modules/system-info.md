@@ -85,7 +85,6 @@ measurements and no run number to distinguish them.
 | Passive-voice finding | `"Inventory captured for…"` is a different voice from every other module's operator-subject prose. | C5 |
 | Raw exception text in a finding | `$"System info collection failed: {ex.Message}"` reaches the reader. | C5 |
 | `Warning` overloaded | This module's `Warning` means "WMI threw"; the keyboard's means "operator confirmed with untested keys". Same colour, unrelated meanings. | A6/C3 |
-| `MachineId` never set | `AuditSession.MachineId` exists and the template renders it, but nothing assigns it — so architecture principle 5's "machine-identified record" is unfulfilled. This module is the natural place to set it. | A7 |
 
 ## Tests
 

@@ -27,6 +27,7 @@ public sealed class SystemInfoSnapshot
     public string? Motherboard { get; set; }
     public string? SystemManufacturer { get; set; }
     public string? SystemModel { get; set; }
+    public string? MachineId { get; set; }
 
     /// <summary>"Model — Size" strings for each detected fixed disk.</summary>
     public List<string> Disks { get; set; } = [];

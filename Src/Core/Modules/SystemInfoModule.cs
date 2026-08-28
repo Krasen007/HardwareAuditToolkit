@@ -22,10 +22,13 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
     private readonly object _gate = new();
     private Action<TestStatus>? _onComplete;
     private int _runGeneration;
+    private SystemInfoSnapshot? _lastSnapshot;
 
     public IModuleMetadata Metadata { get; } = new SystemInfoMetadata();
 
     public string ModuleId => "system";
+
+    public string? MachineId => _lastSnapshot?.MachineId;
 
     public ModulePhase CurrentPhase { get; private set; } = ModulePhase.NotStarted;
 
@@ -68,6 +71,7 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
                 try
                 {
                     var snapshot = _provider.GetSnapshot();
+                    _lastSnapshot = snapshot;
                     Action<TestStatus>? cb;
                     lock (_gate)
                     {

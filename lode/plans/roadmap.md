@@ -30,7 +30,7 @@ No decisions required, all cheap to reverse. Start here.
 | A4 | Delete `ModulePlaceholderViewModel`/`View` and the `NavigationService` default arm | `ViewModels/`, `Views/`, `MainWindow.xaml`, `NavigationService.cs` |
 | A5 | Remove the `exclusive` badge and raw `Category` line from dashboard cards | `DashboardHomeView.xaml`, `DashboardItemViewModel.cs` |
 | A6 | Remove `Skipped` and `Unsupported` from `TestStatus` and their read sites | `IModuleMetadata.cs`, `TestOrchestrator.cs`, `HtmlReportTemplate.cs`, `MonitorTestModuleViewModel.cs` |
-| A7 | Remove the Machine ID / Notes / Artifacts template branches and unused model members, or populate them | `HtmlReportTemplate.cs`, `AuditSession.cs` |
+| A7 | Remove the Notes and Artifacts template branches and unused model members; `MachineId` is now populated by SystemInfoModule | `HtmlReportTemplate.cs`, `AuditSession.cs` |
 | A8 | Remove the unreachable mouse `Warning` arm and the stale `duck/bicycle` comment | `MouseTestModuleViewModel.cs` |
 
 **Acceptance:** zero warnings; `dotnet test` green; no `TestStatus` member without

@@ -78,13 +78,12 @@ See [`../architecture/orchestrator.md`](../architecture/orchestrator.md).
 | `completedAt` | **null on first export** | ordering bug, roadmap C1 |
 | `modules[]` | yes | only modules that were *started* |
 | `overallStatus` | yes | precedence-collapsed, see [status-vocabulary](status-vocabulary.md) |
-| `machineId` | **never** | nothing assigns it; the template renders it conditionally, so it is always absent. Architecture principle 5 promises a "machine-identified" record — unfulfilled |
+| `machineId` | yes | set by `TestOrchestrator` from the System Info module's snapshot (`Win32_ComputerSystemProduct.UUID`, falling back to BIOS serial number) |
 | `notes` | **never** | no UI field exists |
 | `reportPath` / `jsonPath` | **null in the exported JSON** | set by `Succeed()` *after* serialisation, so the file always reports null paths |
 | `artifacts[]` | **never** | zero `Artifacts.Add` calls in the solution; serialises as `[]` for every module |
 
-Four of ten session fields are dead. Roadmap A7 either removes them or populates
-them — `machineId` is the one worth keeping, and System Info is where to set it.
+Three of ten session fields are dead. Roadmap A7 removes `notes` and the artifact template branches; `machineId` is now populated by the System Info module.
 
 ## `ModuleMeasurement.Context`
 
