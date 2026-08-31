@@ -155,7 +155,6 @@ public partial class App : Application
 
         var orchestrator = _services?.GetRequiredService<TestOrchestrator>();
         orchestrator?.CancelAll();
-        orchestrator?.CheckpointSession();
 
         var session = _services?.GetRequiredService<AuditSession>();
         if (session is not null && session.CompletedAt is null)
@@ -225,9 +224,6 @@ public partial class App : Application
             StartedAt = DateTime.UtcNow,
         };
         services.AddSingleton(session);
-        // Phase 7 — crash persistence: durable JSON checkpoints are written after each
-        // module completes and on app exit, so a forced termination can't lose findings.
-        services.AddSingleton<ISessionCheckpointStore, SessionCheckpointStore>();
         services.AddSingleton<TestOrchestrator>();
 
         // Phase 6 — reporting: pure exporter (Core) + WPF-bound export service (App).

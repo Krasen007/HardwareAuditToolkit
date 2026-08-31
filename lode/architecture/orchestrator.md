@@ -10,7 +10,6 @@ start/cancel, exclusivity, timeouts, and the recording of every result into
 bool TryStartModule(string moduleId, out string reason);  // false + reason, never throws
 bool CancelModule(string moduleId);                       // false when not running
 void CancelAll();
-void CheckpointSession();
 IReadOnlyList<ITestModule> Modules { get; }
 ITestModule? CurrentExclusiveModule { get; }
 ```
@@ -125,15 +124,14 @@ Only modules with `CompletedAt` set participate. Two consequences that matter:
 
 See [`../reporting/status-vocabulary.md`](../reporting/status-vocabulary.md).
 
-## Checkpoint hooks
-
-`_checkpoint?.Save(_session)` fires after every completion, after every cancel, in
-`Dispose()`, and from `CheckpointSession()`. **Nothing reads these files back** —
-see [`../plans/open-decisions.md`](../plans/open-decisions.md) D3.
-
 ## Disposal
 
-`Dispose()` cancels every running module best-effort, disposes timers, clears
-state, then checkpoints. It runs during `_services.Dispose()` in `App.OnExit`,
-i.e. *after* `App.OnMainWindowClosing` has set `session.CompletedAt` — which is
-why the checkpoint is more complete than the exported report.
+`Dispose()` cancels every running module best-effort, disposes timers and clears
+state. It runs during `_services.Dispose()` in `App.OnExit`.
+
+## Checkpoints (removed)
+
+The `SessionCheckpointStore` / `ISessionCheckpointStore` crash-persistence layer
+was **removed** in roadmap Phase 1 (owner decision D3: no crash recovery). The
+orchestrator writes no checkpoint files; the only durable artifacts are the
+exported report pair. See [`../plans/open-decisions.md`](../plans/open-decisions.md).

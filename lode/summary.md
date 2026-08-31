@@ -8,7 +8,7 @@ network. Five test modules (`keyboard`, `mouse`, `monitor`, `system`, `stress`)
 implement a common `ITestModule` contract, are discovered through DI, and are
 coordinated by a single `TestOrchestrator` that enforces one-exclusive-module-at-a-time
 and records a `TestStatus` per run into an `AuditSession`. The build is clean
-(zero warnings) with **61 xunit tests passing**. All feature work described in the
+(zero warnings) with **68 xunit tests passing**. All feature work described in the
 architecture document is implemented; the outstanding work is not new features but
 **correcting the report layer, the status vocabulary and the exit semantics**, all
 catalogued in [`../taste-audit.md`](../taste-audit.md) and planned in
@@ -27,17 +27,15 @@ them through any refactor.
    becomes `Failed`, not a dead process. See
    [`architecture/fault-containment.md`](architecture/fault-containment.md).
 
-## The two questions that were never answered
+## The three questions that were open — now answered
 
-Both block implementation work and need the human's decision. Recorded in
-[`plans/open-decisions.md`](plans/open-decisions.md).
+All three open decisions were answered by the owner on 2026-08-31 and are
+binding; see [`plans/open-decisions.md`](plans/open-decisions.md) (§"Resolved")
+and [`plans/roadmap.md`](plans/roadmap.md) for the implementation phases:
 
-- **What does leaving a test mean?** Every exit path currently records `Cancelled`,
-  conflating "looked and moved on" with "aborted" and with "deliberately stopped
-  the burn-in early".
-- **Is operator judgment authoritative, or is coverage?** The keyboard module
-  overrides the operator with `Warning`; the mouse module passes on zero evidence.
-  One answer must apply to both.
+- **Leaving a test is a non-event** — it records nothing; only Ctrl+E aborts.
+- **The operator is authoritative** — coverage is a measurement, never a verdict.
+- **No crash recovery** — the write-only checkpoint store is deleted.
 
 ## Current shape
 

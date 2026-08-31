@@ -299,7 +299,7 @@ need a human call, and the output fixes land before any new surface.
 |---|---|---|
 | A1 | Delete the WPM sub-screen: `IsWpmMode`/`WpmTarget`/`StartWpm`/`ScoreWpm`, the XAML block, and `KeyboardTestModule.RecordWpm` | `KeyboardTestModuleViewModel.cs`, `KeyboardTestView.xaml:33,87-114`, `KeyboardTestModule.cs:210-230` |
 | A2 | Delete the duck-tracing sub-screen: `BuildTraceTarget`/`StartTrace`/`AddTrace`/`EndTrace`, the XAML block, canvas code-behind, and `MouseTestModule.RecordTrace` | `MouseTestModuleViewModel.cs:131-160,277-342`, `MouseTestView.xaml:37,61-88`, `MouseTestView.xaml.cs:25-51`, `MouseTestModule.cs:203-218` |
-| A3 | Delete `SessionCheckpointStore`, `ISessionCheckpointStore`, the four call sites, the DI registration, and both checkpoint test files — **or** implement the resume prompt in `App.OnStartup` that justifies them. Do not leave write-only. | `Core/SessionCheckpointStore.cs`, `Core/ISessionCheckpointStore.cs`, `TestOrchestrator.cs:240,252,289,343`, `App.xaml.cs:230`, `Tests/SessionCheckpointTests.cs`, `Tests/OrchestratorCheckpointTests.cs` |
+| A3 | ~~Decide, then delete or implement~~ **Decided (D3): delete.** Remove `SessionCheckpointStore`, `ISessionCheckpointStore`, the four call sites, the DI registration, and both checkpoint test files. | `Core/SessionCheckpointStore.cs`, `Core/ISessionCheckpointStore.cs`, `TestOrchestrator.cs:240,252,289,343`, `App.xaml.cs:230`, `Tests/SessionCheckpointTests.cs`, `Tests/OrchestratorCheckpointTests.cs` |
 | A4 | Delete `ModulePlaceholderViewModel`, `ModulePlaceholderView`, its `DataTemplate`, and the `NavigationService` default arm | `ViewModels/ModulePlaceholderViewModel.cs`, `Views/ModulePlaceholderView.xaml`, `MainWindow.xaml:18-20`, `NavigationService.cs:23` |
 | A5 | Remove the `exclusive` badge and the `Category` line from dashboard cards; drop `IsExclusive`/`Category` from `DashboardItemViewModel` | `DashboardHomeView.xaml:51-59`, `DashboardItemViewModel.cs` |
 | A6 | Remove `Skipped` and `Unsupported` from `TestStatus` and their read sites; remove the dead `TestOrchestrator.cs:373` arm | `IModuleMetadata.cs:64-68`, `TestOrchestrator.cs:359,367,371-374`, `HtmlReportTemplate.cs:145`, `MonitorTestModuleViewModel.cs:193` |
@@ -312,20 +312,21 @@ interface with a write-only method.
 
 ### Pass B — Decide the two questions that were never asked
 
-These need the owner's call before implementation. Both are recorded in §7 below.
+Both questions have been answered by the owner (§8). The items are unblocked;
+the per-module auto-start policy note in B3 remains a design choice to make.
 
 | # | Action | Depends on |
 |---|---|---|
-| B1 | Split "leave this screen" from "cancel this test." Give the fullscreen pattern window only the former; keep Ctrl+E as a true abort everywhere. Fixes `todo.md` 2. | Decision D1 |
-| B2 | Apply one trust model to every module. Fixes `todo.md` 1, and requires either relaxing the keyboard `Warning` or adding a mouse coverage floor — not one each. | Decision D2 |
-| B3 | Stop `MonitorTestView` auto-starting on load, or make leaving-without-confirming a non-event. Align all five modules to one auto-start policy and write the reasoning in a comment, as `CpuStressView.xaml.cs:8-13` already does. | Decision D1 |
+| B1 | ~~Blocked~~ **Unblocked (D1: leaving is a non-event).** Split "leave this screen" from "abort this test." Navigating away / closing records nothing; only Ctrl+E writes `Cancelled`. Keep the `MonitorPatternWindow` mitigation (overlay hidden, "Back to controls" only) and make it the rule, not a patch. Fixes `todo.md` 2. | Decided — D1 |
+| B2 | ~~Blocked~~ **Unblocked (D2: operator authoritative everywhere).** Coverage is a measurement, never a verdict: keep the keyboard's current behaviour (missing keys recorded as a finding, not a Warning), and treat the mouse's evidence-less `Confirm` as correct — no coverage floor. Remove the unreachable mouse `Warning` arm accordingly (see A8). Fixes `todo.md` 1. | Decided — D2 |
+| B3 | ~~Blocked~~ **Unblocked (D1).** Stop `MonitorTestView` auto-starting on load — with leaving-as-a-non-event, auto-start + immediate leave now writes nothing, but auto-start still hides "not run" from the operator. Align all five modules to one auto-start policy and write the reasoning in a comment, as `CpuStressView.xaml.cs:8-13` already does. | Decided — D1 |
 
 ### Pass C — Fix the output, then lock it down with tests
 
 | # | Action | Files |
 |---|---|---|
 | C1 | Stamp `CompletedAt` **before** serialization; derive the filename from export time so re-export never overwrites | `ReportExportService.cs:45-61`, `SessionExporter.cs:45-47,171-172` |
-| C2 | Render **every** module, including untested ones, and lead the report with counts ("3 passed, 1 failed, 1 not run"). A partial audit must never read `Passed`. | `HtmlReportTemplate.cs:55-71`, `TestOrchestrator.UpdateOverallStatus`, needs the module roster from `TestOrchestrator.Modules` |
+| C2 | Render **every** module, including untested ones, and lead the report with counts ("3 passed, 1 failed, 1 not run"). A partial audit must never read `Passed`. With D1 decided (leaving is a non-event), untested modules render as `NotRun` — not `Cancelled` — and the report never implies the operator aborted anything. | `HtmlReportTemplate.cs:55-71`, `TestOrchestrator.UpdateOverallStatus`, needs the module roster from `TestOrchestrator.Modules` |
 | C3 | Introduce a report DTO between `AuditSession` and both writers, with display-name mapping for statuses, so raw enums, internal context tags and exception type names stop reaching the reader | new `Core/Reporting/ReportModel.cs`, `HtmlReportTemplate.cs`, `SessionExporter.cs:45` |
 | C4 | Wire `FlagDefect(note)` to a real text field on all three screens. **Highest-value missing feature in the product.** | `KeyboardTestView.xaml`, `MouseTestView.xaml`, `MonitorTestView.xaml` + the three VMs |
 | C5 | Normalise finding voice to one convention; move internal/diagnostic strings out of `Findings` into a separate diagnostics channel | all five `Core/Modules/*.cs`, `TestOrchestrator.cs:156,319` |
@@ -361,6 +362,9 @@ golden files fail on any wording drift.
 
 ## 7. Open decisions requiring the owner
 
+> **Resolved.** All three decisions were answered by the owner and are recorded
+> as decided in §8 below; the original options are kept here for context.
+
 **D1 — What does leaving a test mean?**
 Currently every exit path records `Cancelled`, which conflates "I looked and moved
 on," "I aborted," "the app closed," "the timeout fired," and "I deliberately
@@ -382,7 +386,36 @@ If no, delete it. Write-only is the one option with no defence. Blocks A3.
 
 ---
 
-## 8. Verification
+## 8. Owner decisions (resolved)
+
+The owner has answered all three open decisions. They are recorded here as
+decided, and the affected action items are unblocked accordingly.
+
+**D1 — What does leaving a test mean?** → **Leaving is a non-event.**
+Leaving a test (navigating away, closing the window, the unattended timeout)
+records **nothing** in the report: it means the operator decided not to do the
+test right now, and not all tests are mandatory. Only a deliberate abort
+(Ctrl+E) writes a status. Consequences: the `Cancelled` overloading (F3)
+collapses — Ctrl+E is the sole `Cancelled` write path, and "stopped burn-in
+early" still deserves its own distinction. Blocks B1 and B3, now resolved.
+
+**D2 — Is operator judgment authoritative, or is coverage?** → **Operator is
+authoritative.** If the operator reports the device broken, it is broken, full
+stop. Coverage is a reported measurement, never a verdict that overrides the
+operator. This is option (a) — the keyboard's current model — and it means the
+mouse module is *not* broken for accepting zero evidence; it already matches.
+The remaining work is coherence in how coverage is *presented* (measurement, not
+verdict) and never letting the UI imply that confirming with zero coverage is
+insufficient. Resolves B2.
+
+**D3 — Does the tool need crash recovery at all?** → **No.** Delete
+`SessionCheckpointStore`, `ISessionCheckpointStore`, all four write sites, the
+DI registration, and both checkpoint test files. Resolves A3 as a straight
+deletion.
+
+---
+
+## 9. Verification
 
 ```powershell
 dotnet build Src\HardwareAuditToolkit.sln
@@ -400,7 +433,7 @@ running after each pass:
 
 ---
 
-## 9. Process notes
+## 10. Process notes
 
 - `Src/README.md` is a phase changelog rather than a description of current
   state, and already contains one false claim (the persistent-header export

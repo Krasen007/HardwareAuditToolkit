@@ -20,8 +20,6 @@ dotnet test Src\HardwareAuditToolkit.sln
 `ReportExportServiceTests.cs` | 4 | App-layer cascade + `CompletedAt` semantics |
 `NavigationServiceTests.cs` | 2 (7 cases) | id→type routing map |
 `CpuStressFaultInjectionTests.cs` | 1 | **High value.** Injected worker throw → `Failed` + finding, process survives |
-`SessionCheckpointTests.cs` | 1 | Save → file exists → round-trips |
-`OrchestratorCheckpointTests.cs` | 1 | `SaveCalled` after a module completes |
 
 ## Conventions
 
@@ -92,11 +90,6 @@ Worth knowing so they are not mistaken for safety:
   `App.ConfigureServices` by reflection. They assert container shape, not behaviour.
 - `SensorProvider_OpensWithoutThrowing` — self-described as having no assertions on
   readings.
-- `OrchestratorCheckpointTests` asserts a boolean flag on a fake, not that anything
-  recoverable results.
-- `SessionCheckpointTests` round-trips the checkpoint file — **a read path the
-  application does not have.** It is the only reader in the repository. See
-  [`../plans/open-decisions.md`](../plans/open-decisions.md) D3.
 - `NavigationServiceTests` uses `RuntimeHelpers.GetUninitializedObject` to avoid
   constructing view models, so it asserts the map only.
 - Three copies of a reflection helper reach into `TestOrchestrator._session`.

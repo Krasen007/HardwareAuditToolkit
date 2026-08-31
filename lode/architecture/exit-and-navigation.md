@@ -14,7 +14,7 @@ graph TD
     H --> CA[orchestrator.CancelAll]
     H --> ND[navigation.NavigateToDashboard]
     X[Native close X] --> OC[App.OnMainWindowClosing]
-    OC --> CA2[CancelAll + CheckpointSession]
+    OC --> CA2[CancelAll]
     OC --> SD[Shutdown - the only app quit]
     ESC[Esc] --> NOTE[confirmation elsewhere; plain data in the keyboard module]
 ```

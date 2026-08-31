@@ -21,7 +21,6 @@ public sealed class TestOrchestrator : IDisposable
     private readonly AuditSession _session;
     private readonly Dictionary<string, ITestModule> _modulesById;
     private readonly TimeProvider _timeProvider;
-    private readonly ISessionCheckpointStore? _checkpoint;
     private readonly object _gate = new();
 
     // At most one exclusive module may be running at a time.
@@ -59,11 +58,10 @@ public sealed class TestOrchestrator : IDisposable
         }
     }
 
-    public TestOrchestrator(AuditSession session, IEnumerable<ITestModule> modules, TimeProvider? timeProvider = null, ISessionCheckpointStore? checkpoint = null)
+    public TestOrchestrator(AuditSession session, IEnumerable<ITestModule> modules, TimeProvider? timeProvider = null)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _checkpoint = checkpoint;
 
         var list = modules?.ToList() ?? [];
         Modules = list.AsReadOnly();
@@ -239,19 +237,6 @@ public sealed class TestOrchestrator : IDisposable
 
             _running.Clear();
             _exclusiveModule = null;
-            _checkpoint?.Save(_session);
-        }
-    }
-
-    /// <summary>
-    /// Forces a durable checkpoint of the in-memory session now (e.g. on app exit
-    /// after cancelling running modules / before shutdown). Best-effort.
-    /// </summary>
-    public void CheckpointSession()
-    {
-        lock (_gate)
-        {
-            _checkpoint?.Save(_session);
         }
     }
 
@@ -289,10 +274,6 @@ public sealed class TestOrchestrator : IDisposable
             }
 
             UpdateOverallStatus();
-
-            // Crash persistence: after every module completes, write a durable
-            // checkpoint so a forced termination cannot lose the collected findings.
-            _checkpoint?.Save(_session);
         }
     }
 
@@ -350,7 +331,6 @@ public sealed class TestOrchestrator : IDisposable
         }
 
         UpdateOverallStatus();
-        _checkpoint?.Save(_session);
     }
 
     private void UpdateOverallStatus()

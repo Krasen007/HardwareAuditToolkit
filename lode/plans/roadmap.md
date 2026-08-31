@@ -1,117 +1,121 @@
-# Roadmap
+# Roadmap — Implementation Plan (next work)
 
-Derived from [`../../taste-audit.md`](../../taste-audit.md). Ordered so cheap,
-reversible subtraction lands before decisions, and the output is corrected before
-any new surface is added.
+Rebuilt 2026-08-31 after the owner resolved all three open decisions
+([open-decisions.md](open-decisions.md), §"Resolved"). Supersedes the original
+Pass A–E ordering. Based on the tree at commit `0386903` ("C1–C9 all done").
 
-All feature work from the architecture document is complete. **Nothing on this
-roadmap is a new feature.** It is removal, correction and one missing field.
+**Already landed and no longer planned:** Pass A subset (A4/A6/A7/A8), all of
+Pass C (C1–C9, including the report DTO `ReportModel` and golden-file tests),
+all of Pass D (display sleep, sensor reason, graph fill). A1/A2 (WPM + duck
+sub-screens) and A5 (dashboard badge) are **deferred by owner — do not do them**.
+
+What remains is exactly the work the three decisions unblocked, plus the
+coherence cleanup. Nothing below is a new feature.
 
 ```mermaid
 graph LR
-    A[Pass A: Subtract] --> C[Pass C: Fix the output]
-    A --> D[Pass D: Operator environment]
-    B0{{Decisions D1 D2 D3}} --> B[Pass B: Decide semantics]
-    A --> B
-    B --> C
-    C --> E[Pass E: Coherence cleanup]
-    D --> E
+    P1[Phase 1: Delete checkpoints] --> P2[Phase 2: Exit semantics]
+    P2 --> P3[Phase 3: Trust model consistency]
+    P3 --> P4[Phase 4: Coherence cleanup]
+    P4 --> P5[Phase 5: Ship checklist]
 ```
 
-## Pass A — Subtract
+---
 
-Aimed at "no decisions required, all cheap to reverse." Status reflects the owner's
-re-scope (landed 2026-08-28): **keep the two sub-screens as features; remove only
-stale/unused code.** A1/A2 are therefore deferred, A3 waits on D3, and A5 (visible
-UI) is skipped.
+## Phase 1 — Delete the checkpoint store (A3, decided: no crash recovery) — **Done**
 
-| # | Action | Primary files | Status |
-|---|---|---|---|
-| A1 | Delete the WPM sub-screen and `KeyboardTestModule.RecordWpm` | `KeyboardTestModuleViewModel.cs`, `KeyboardTestView.xaml`, `KeyboardTestModule.cs` | **Deferred** — feature kept |
-| A2 | Delete the duck-tracing sub-screen and `MouseTestModule.RecordTrace` | `MouseTestModuleViewModel.cs`, `MouseTestView.xaml(.cs)`, `MouseTestModule.cs` | **Deferred** — feature kept |
-| A3 | Delete the write-only checkpoint store **or** implement the resume prompt. Do not leave it write-only. | `Core/SessionCheckpointStore.cs`, `Core/ISessionCheckpointStore.cs`, `TestOrchestrator.cs`, `App.xaml.cs` | Pending — needs [D3](open-decisions.md) |
-| A4 | Delete `ModulePlaceholderViewModel`/`View` and the `NavigationService` default arm | `ViewModels/`, `Views/`, `MainWindow.xaml`, `NavigationService.cs` | **Done** — unknown id now throws |
-| A5 | Remove the `exclusive` badge and raw `Category` line from dashboard cards | `DashboardHomeView.xaml`, `DashboardItemViewModel.cs` | **Deferred** — renders visible UI; owner skipped |
-| A6 | Remove `Skipped` and `Unsupported` from `TestStatus` and their read sites; drop the dead aggregation arm | `IModuleMetadata.cs`, `TestOrchestrator.cs`, `HtmlReportTemplate.cs`, `MonitorTestModuleViewModel.cs` | **Done** |
-| A7 | Remove the Notes and Artifacts template branches and the unused model members; `MachineId` is populated by SystemInfoModule | `HtmlReportTemplate.cs`, `AuditSession.cs`, `ITestModule.cs`, 5 modules, `TestOrchestrator.cs` | **Done** — full `Artifacts` chain removed |
-| A8 | Remove the unreachable mouse `Warning` arm and the stale `duck/bicycle` comment | `MouseTestModuleViewModel.cs` | **Done** |
+Landed 2026-08-31: `SessionCheckpointStore`, `ISessionCheckpointStore`,
+`CheckpointSession()`, the four write sites, the DI registration and both
+checkpoint test files removed. Builds with zero warnings; 68 tests pass; no
+checkpoint reference remains in `Src/`.
 
-**Acceptance:** zero warnings; `dotnet test` green; no `TestStatus` member without
-a write site; no interface with a write-only method. Met for the landed subset
-(A4/A6/A7/A8): builds with 0 warnings, 61 tests pass, and `Artifacts`/`Notes`/
-`Skipped`/`Unsupported` have no remaining source references.
+## Phase 2 — Exit semantics: leaving is a non-event (B1 + B3, decided D1)
 
-**Rationale:** the sub-screens measure the *operator* (typing speed, hand
-steadiness), not the hardware, and neither affects any status. Worse, both leave
-raw capture running, so typing the WPM pangram silently fills the keyboard
-coverage metric that decides Pass vs `Warning`. The owner has chosen to keep them
-for now (A1/A2 deferred); see [`../modules/keyboard.md`](../modules/keyboard.md) and
-[`../modules/mouse.md`](../modules/mouse.md).
+The rule from D1: **leaving a test records nothing.** It means the operator
+decided not to do that test now. Not all tests are mandatory. Only a deliberate
+abort writes a status.
 
-## Pass B — Decide the semantics
+1. **Navigate-away is a non-event.** View-model `Dispose` / navigation away
+   stops a running module *without* appending a `ModuleResult` or writing a
+   finding. Today `CancelModule` records `Cancelled`; add a non-recording stop
+   path (e.g. `StopModule` vs `AbortModule`) in `TestOrchestrator` and use it
+   from navigation disposal.
+2. **Window close / app exit is a non-event.** `App.OnMainWindowClosing` and
+   `HandleExitRequested` currently `CancelAll()` → `Cancelled`. On shutdown
+   the report never gets read, so use the non-recording stop everywhere except
+   the one true abort (below).
+3. **Ctrl+E is the only abort.** The `ExitRequestedMessage` path records
+   `Cancelled` only when invoked from the Ctrl+E hook / Exit Test affordance.
+   The §6 guarantee (mouse-only and keyboard-only exit both independently
+   sufficient) is unchanged — only the recorded meaning differs.
+4. **Burn-in early stop.** The CPU stress Stop button ending a deliberate
+   30-second smoke test must not read `Cancelled`. Record `Passed` with a
+   finding stating the achieved duration — prefer reusing `Passed` over adding
+   a `StoppedEarly` status, to keep the vocabulary small.
+5. **Monitor pattern window.** Keep the current mitigation (overlay collapsed,
+   "Back to controls" only, Ctrl+E still aborts); now it matches the rule
+   instead of patching over it.
+6. **Auto-start policy (B3).** Stop `MonitorTestView` auto-starting on load.
+   With leaving-as-a-non-event, auto-start + immediate leave writes nothing,
+   but auto-start still hides "not run" from the operator. Decide one policy
+   for all five modules and write the reasoning in a comment, as
+   `CpuStressView.xaml.cs` already does.
+7. **Unattended timeout** (`MaxDuration`) records `Cancelled` today. Decide:
+   timeout is an abort → keep `Cancelled`; document the choice in
+   `lode/reporting/status-vocabulary.md`.
 
-Blocked on [`open-decisions.md`](open-decisions.md).
+**Acceptance:** open each module screen, leave immediately, export — the report
+shows that module as `NotRun` with no `Cancelled` row and no finding. Ctrl+E
+from every screen still records `Cancelled`. A 30 s stress run reads `Passed`,
+not `Cancelled`. Update `lode/architecture/exit-and-navigation.md`,
+`lode/reporting/status-vocabulary.md`, and the module files' state machines.
 
-| # | Action | Needs |
-|---|---|---|
-| B1 | Split "leave this screen" from "cancel this test"; give the fullscreen pattern window only the former. Resolves `todo.md` 2. | D1 |
-| B2 | Apply one trust model to all modules. Resolves `todo.md` 1. | D2 |
-| B3 | Align auto-start policy across all five modules and record the reasoning in a comment, as `CpuStressView.xaml.cs` already does | D1 |
+## Phase 3 — Operator is authoritative (B2, decided D2)
 
-## Pass C — Fix the output
+The keyboard module already implements this: `Confirm` passes regardless of
+coverage; missing keys are a finding, not a `Warning`. Verify and finish the
+consistency:
 
-The report is the product. This pass is the highest-value work in the plan.
+1. Grep every module for any path where a computed value overrides or
+   downgrades the operator's `Confirm`/`FlagDefect` decision. There must be none.
+2. Coverage appears in the report as a **measurement** (presses/expected,
+   clicks, scroll ticks), never as a verdict word ("insufficient"). Verify in
+   the golden files and the `ReportModel` mapping — the C2/C3 work likely
+   already does this.
+3. Add/extend tests: `Confirm()` with zero evidence returns `Passed` for mouse
+   and keyboard; `FlagDefect` with a note returns `Failed` and the note reaches
+   the report.
+
+**Acceptance:** no module can override the operator; coverage numbers visible in
+the HTML for every confirm; golden files show a measurement, not a judgement.
+
+## Phase 4 — Coherence cleanup (E1–E4)
+
+Ordered smallest-first:
 
 | # | Action |
 |---|---|
-| C1 | Stamp `CompletedAt` **before** serialisation; derive the filename from export time so re-export never overwrites |
-| C2 | Render **every** module including untested ones, and lead with counts. A partial audit must never read `Passed`. |
-| C3 | Introduce a report DTO between `AuditSession` and both writers, with status display names, so raw enums and internal tags stop reaching the reader |
-| C4 | Done — "What's wrong?" note field bound to `FlagDefect(note)` on keyboard/mouse/monitor screens (blank note falls back to the module's default wording); cleared on Start/Reset |
-| C5 | Normalise finding voice; route internal diagnostics out of `Findings` into `IDiagnosticLog` |
-| C6 | Surface export failure honestly; stop returning `true` when the clipboard write threw |
-| C7 | Show the HTML path as the primary "Saved to" line — the HTML is the human deliverable |
-| C8 | Golden-file HTML and JSON for four sessions: empty, one-module, mid-run, full-with-defect. Add an escaping test. |
-| C9 | Show local time alongside UTC |
+| E1 | Single source of truth for the module list: build the dashboard from `TestOrchestrator.Modules` / `IModuleMetadata`; delete the hardcoded list in `DashboardViewModel` and the routing `switch` in `NavigationService` |
+| E2 | Persistent header in `MainWindow.xaml` carrying Export + Exit; delete the copy-pasted `ExitOverlay`/"Back to dashboard" pairs from the six views. Then make `README.md` / `Src/README.md` describe current state truthfully |
+| E3 | Per-module status on dashboard cards so the operator sees the audit's shape (what ran, what passed, what's left) before exporting. Feed from the same `IModuleMetadata` source as E1 |
+| E4 | `schemaVersion` field in the JSON (add to `ReportModel` / serializer; regenerate the golden JSON files in the same commit) |
 
-**Acceptance:** an export with nothing run reads unmistakably as "nothing was
-audited"; an export with one module run names the four that were not; no raw enum
-identifier, internal tag or exception type name appears in either artifact.
+**Acceptance:** adding a sixth module touches exactly one place; one shared
+exit/export chrome; dashboard shows status per module; golden JSON carries
+`schemaVersion`.
 
-## Pass D — Operator environment
-
-The three complaints in [`../../todo.md`](../../todo.md) item 3.
-
-| # | Action |
-|---|---|
-| D1 | Block display sleep for the duration of a burn-in (`ES_CONTINUOUS \| ES_DISPLAY_REQUIRED \| ES_SYSTEM_REQUIRED`), cleared on stop/cancel/dispose |
-| D2 | Explain *why* temperature is unavailable — surface the sensor-open failure and show "run as administrator for core temperatures" instead of a bare `N/A` |
-| D3 | Make the telemetry graph fill available width instead of guttering |
-
-## Pass E — Coherence cleanup
-
-Only after A–D.
-
-| # | Action |
-|---|---|
-| E1 | Single source of truth for the module list: build the dashboard from `IModuleMetadata` and delete the hardcoded list and the routing `switch` |
-| E2 | A real persistent header in `MainWindow.xaml` carrying Export + Exit; delete the six copy-pasted overlay/back-button pairs |
-| E3 | Per-module status on the dashboard so the operator can see the audit's shape before exporting |
-| E4 | Add a `schemaVersion` field to the JSON |
-
-## Not in scope (deferred to v2)
-
-Admin-mode opt-in with full sensor detail and automatic thermal cutoff;
-audio/mic/webcam/battery/network/USB modules; non-US keyboard layouts; silent/CLI
-unattended mode; cross-session history and trend comparison; code signing and
-AV/EDR allow-listing.
-
-## Manual pre-ship checklist
-
-Cannot be satisfied in code:
+## Phase 5 — Pre-ship checklist (cannot be done in code)
 
 - Authenticode code-signing via the org PKI.
 - An EDR pass (e.g. Microsoft Defender for Endpoint) before wide rollout.
-- A manual walk of every exit path from every screen, including mid-CPU-stress.
-- On-hardware verification that every physical key registers, and that patterns
-  render at correct scale on a mixed-DPI multi-monitor setup.
+- Manual walk of every exit path from every screen, including mid-CPU-stress,
+  verifying the Phase 2 semantics hold.
+- On-hardware verification: every physical key registers; patterns render at
+  correct scale on mixed-DPI multi-monitor; USB write-test cascade with a real
+  stick.
+
+## Not in scope (owner-deferred / v2)
+
+WPM and duck sub-screen removal (A1/A2 — features kept), dashboard badge
+cleanup (A5), admin-mode sensor detail, audio/network/USB modules, non-US
+layouts, CLI mode, cross-session history, code-signing tooling.

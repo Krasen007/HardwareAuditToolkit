@@ -1,5 +1,33 @@
 # Open Decisions
 
+> **RESOLVED 2026-08-31.** The owner answered all three. The decisions are
+> binding and are implemented in the roadmap phases noted below. The original
+> analysis below is kept for context.
+
+## D1 — What does leaving a test mean? → **RESOLVED: option (a), leaving is a non-event**
+
+Leaving a test records **nothing** in the report: the operator decided not to do
+that test now, and not all tests are mandatory. Only a deliberate abort (Ctrl+E
+/ Exit Test) writes `Cancelled`. Implemented in
+[roadmap.md](roadmap.md) Phase 2 (B1, B3). The burn-in Stop button records
+`Passed` with the achieved duration, not `Cancelled`.
+
+## D2 — Is operator judgment authoritative, or is coverage? → **RESOLVED: option (a), operator is authoritative**
+
+If the operator reports the device broken, it is broken. Coverage is a reported
+measurement, never a verdict that overrides them. No coverage floor for the
+mouse; the keyboard's current behaviour (finding, not `Warning`) is the model
+everywhere. Implemented/verified in roadmap Phase 3 (B2).
+
+## D3 — Does the tool need crash recovery at all? → **RESOLVED: no — delete it**
+
+`SessionCheckpointStore`, `ISessionCheckpointStore`, the four write sites, the
+DI registration and both test files are removed. Roadmap Phase 1 (A3).
+
+---
+
+## Original analysis (context only)
+
 Three questions the codebase currently answers inconsistently or not at all. Each
 blocks specific roadmap work. **The human decides these; do not pick one silently
 while implementing something else.**

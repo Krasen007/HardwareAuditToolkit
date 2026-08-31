@@ -100,14 +100,14 @@ Written state, all under `%LOCALAPPDATA%\HardwareAuditToolkit\`:
 |---|---|---|
 | `extract\` | single-file host | by the runtime |
 | `diagnostics.log` | `FileDiagnosticLog` | by a human |
-| `audit-<guid>.hat.json` | `SessionCheckpointStore` | **never** — accumulates forever |
 
 Reports go elsewhere entirely, through the export cascade — app directory first, so a
 USB run leaves the report on the stick. See
 [`../reporting/export-cascade.md`](../reporting/export-cascade.md).
 
-The checkpoint accumulation is open decision
-[D3](../plans/open-decisions.md): one file per launch, never read, never pruned.
+The `audit-<guid>.hat.json` checkpoint file was removed in roadmap Phase 1
+(owner decision D3: no crash recovery) — the app now writes nothing here except
+`diagnostics.log` and the single-file host's `extract\` directory.
 
 ## Target framework
 

@@ -26,6 +26,9 @@ Domain language used across the codebase, the architecture document and this lod
 - **Artifact** — a loose file (screenshot, raw log) once imagined beside the session
   JSON. The whole concept — interface member, model field, template branch — was
   **removed** in roadmap A7; no module ever produced one.
+- **Checkpoint** — a durable JSON snapshot under `%LOCALAPPDATA%`, once written
+  after every module completion and on exit. **Removed** in roadmap Phase 1
+  (owner decision D3: no crash recovery); nothing in the app reads it back.
 - **Overall status** — session-level status, collapsed from the module statuses by
   precedence `Failed > Warning > Cancelled > Passed`.
 
