@@ -37,7 +37,6 @@ public class OrchestratorCheckpointTests
         public IList<ModuleMeasurement> Measurements { get; } = [];
         public IList<string> Findings { get; } = [];
         public IList<string> OperatorActions { get; } = [];
-        public IList<string> Artifacts { get; } = [];
 
         public bool CheckPreconditions() => true;
 

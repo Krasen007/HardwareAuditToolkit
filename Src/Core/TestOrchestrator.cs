@@ -280,7 +280,6 @@ public sealed class TestOrchestrator : IDisposable
             result.Findings.AddRange(module.Findings);
             result.Measurements.AddRange(module.Measurements);
             result.OperatorActions.AddRange(module.OperatorActions);
-            result.Artifacts.AddRange(module.Artifacts);
 
             if (module is HardwareAuditToolkit.Core.Modules.SystemInfoModule systemModule && systemModule.MachineId is { } machineId)
             {
@@ -342,7 +341,6 @@ public sealed class TestOrchestrator : IDisposable
         result.Findings.AddRange(entry.Module.Findings);
         result.Measurements.AddRange(entry.Module.Measurements);
         result.OperatorActions.AddRange(entry.Module.OperatorActions);
-        result.Artifacts.AddRange(entry.Module.Artifacts);
 
         if (entry.Module is HardwareAuditToolkit.Core.Modules.SystemInfoModule systemModule && systemModule.MachineId is { } machineId)
         {
@@ -366,7 +364,7 @@ public sealed class TestOrchestrator : IDisposable
         {
             _session.OverallStatus = TestStatus.Failed;
         }
-        else if (completed.Any(m => m.Status == TestStatus.Warning || m.Status == TestStatus.Unsupported))
+        else if (completed.Any(m => m.Status == TestStatus.Warning))
         {
             _session.OverallStatus = TestStatus.Warning;
         }
@@ -374,13 +372,12 @@ public sealed class TestOrchestrator : IDisposable
         {
             _session.OverallStatus = TestStatus.Cancelled;
         }
-        else if (completed.All(m => m.Status == TestStatus.Passed || m.Status == TestStatus.Skipped))
-        {
-            _session.OverallStatus = TestStatus.Passed;
-        }
         else
         {
-            _session.OverallStatus = TestStatus.NotRun;
+            // With Skipped/Unsupported gone, a completed (non-empty) run with no
+            // failed/warning/cancelled result can only be all-passed. The old
+            // "else => NotRun" arm was unreachable.
+            _session.OverallStatus = TestStatus.Passed;
         }
     }
 

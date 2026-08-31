@@ -61,12 +61,6 @@ public enum TestStatus
     /// <summary>Completed with a flagged concern that isn't a clean pass or fail.</summary>
     Warning,
 
-    /// <summary>The operator or timeout budget chose not to run it.</summary>
-    Skipped,
-
-    /// <summary>The required capability isn't present on this hardware.</summary>
-    Unsupported,
-
     /// <summary>The operator or orchestrator stopped it mid-run.</summary>
     Cancelled,
 }

@@ -40,8 +40,6 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
 
     public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = [];
-
     public bool CheckPreconditions() => true;
 
     public void Start(Action<TestStatus> onComplete)
@@ -58,7 +56,6 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
             Measurements.Clear();
             Findings.Clear();
             OperatorActions.Clear();
-            Artifacts.Clear();
 
             // Delegate to a worker thread so Start returns promptly (ITestModule
             // contract) and the UI thread is never blocked by WMI queries. The

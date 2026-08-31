@@ -190,7 +190,6 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
                     TestStatus.Warning => "Warning — see findings.",
                     TestStatus.Failed => "Failed — operator flagged a monitor defect.",
                     TestStatus.Cancelled => "Cancelled.",
-                    TestStatus.Unsupported => "Unsupported on this hardware.",
                     _ => $"Ended ({message.Status}).",
                 };
                 StatusDetail = message.Detail ?? FinalStatusText;

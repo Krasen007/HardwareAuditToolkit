@@ -6,7 +6,7 @@ namespace HardwareAuditToolkit.Core.Reporting;
 /// <summary>
 /// Default HTML report renderer (architecture §10 Phase 6). Self-contained, no external
 /// dependencies: inline CSS, a summary table, and a per-module detail section covering
-/// status, timestamps, findings, measurements, operator actions, and artifacts. Designed
+/// status, timestamps, findings, measurements, and operator actions. Designed
 /// to print cleanly to PDF from any browser.
 /// </summary>
 public sealed class HtmlReportTemplate : IReportTemplate
@@ -34,7 +34,6 @@ public sealed class HtmlReportTemplate : IReportTemplate
         sb.AppendLine("    .pass { color: #1e7e34; } .fail { color: #c0392b; } .warn { color: #b9770e; }");
         sb.AppendLine("    .na { color: #888; } .cancel { color: #6c3483; }");
         sb.AppendLine("    ul { margin: 4px 0 4px 18px; padding: 0; }");
-        sb.AppendLine("    .notes { white-space: pre-wrap; }");
         sb.AppendLine("    @media print { body { margin: 12px; } }");
         sb.AppendLine("  </style>");
         sb.AppendLine("</head>");
@@ -109,20 +108,6 @@ public sealed class HtmlReportTemplate : IReportTemplate
                 sb.AppendLine("    </tbody>");
                 sb.AppendLine("  </table>");
             }
-
-            if (m.Artifacts.Count > 0)
-            {
-                sb.AppendLine("  <p><b>Artifacts</b></p><ul>");
-                foreach (var a in m.Artifacts)
-                    sb.AppendLine($"    <li>{Enc(a)}</li>");
-                sb.AppendLine("  </ul>");
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(session.Notes))
-        {
-            sb.AppendLine("  <h2>Notes</h2>");
-            sb.AppendLine($"  <p class=\"notes\">{Enc(session.Notes)}</p>");
         }
 
         sb.AppendLine("</body>");
@@ -142,7 +127,7 @@ public sealed class HtmlReportTemplate : IReportTemplate
     {
         TestStatus.Passed => "pass",
         TestStatus.Failed => "fail",
-        TestStatus.Warning or TestStatus.Unsupported => "warn",
+        TestStatus.Warning => "warn",
         TestStatus.Cancelled => "cancel",
         TestStatus.NotRun => "na",
         _ => "na",

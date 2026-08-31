@@ -16,7 +16,7 @@ namespace HardwareAuditToolkit.App.ViewModels;
 /// View model for the Phase 4 mouse test (architecture §10 Phase 4, §6). Drives
 /// the test through the orchestrator, renders click/scroll/drag events from
 /// <see cref="MouseEventMessage"/>, exposes Start/Confirm/Flag paths (each
-/// independent of the global exit paths), and hosts the duck/bicycle tracing
+/// independent of the global exit paths), and hosts the duck tracing
 /// sub-screen launched from within this module (not a separate exclusive module,
 /// mirroring the keyboard WPM sub-screen).
 /// </summary>
@@ -196,7 +196,6 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
                 FinalStatusText = message.Status switch
                 {
                     TestStatus.Passed => "Passed — operator confirmed all mouse functions work.",
-                    TestStatus.Warning => "Warning — see findings.",
                     TestStatus.Failed => "Failed — operator flagged a defect.",
                     TestStatus.Cancelled => "Cancelled.",
                     _ => $"Ended ({message.Status}).",

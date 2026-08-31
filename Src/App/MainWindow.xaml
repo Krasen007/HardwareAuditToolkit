@@ -15,9 +15,6 @@
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardHomeView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ModulePlaceholderViewModel}">
-            <views:ModulePlaceholderView />
-        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SystemInfoModuleViewModel}">
             <views:SystemInfoView />
         </DataTemplate>

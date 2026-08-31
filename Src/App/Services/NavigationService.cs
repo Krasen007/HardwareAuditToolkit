@@ -20,7 +20,7 @@ public sealed class NavigationService(ShellViewModel shell, IServiceProvider ser
             "keyboard" => _services.GetRequiredService<KeyboardTestModuleViewModel>(),
             "mouse" => _services.GetRequiredService<MouseTestModuleViewModel>(),
             "monitor" => _services.GetRequiredService<MonitorTestModuleViewModel>(),
-            _ => ActivatorUtilities.CreateInstance<ModulePlaceholderViewModel>(_services, moduleId, this),
+            _ => throw new ArgumentException($"Unknown module id '{moduleId}'.", nameof(moduleId)),
         };
 
         SetScreen(screen);

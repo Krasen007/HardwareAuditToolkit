@@ -49,9 +49,11 @@ graph LR
 | 3 | **Re-export silently overwrites.** The filename derives from `StartedAt`, not export time. | C1 |
 | 4 | **The operator cannot describe a defect.** Every failure reads identically. | C4 |
 | 5 | **Engineering vocabulary reaches the reader.** Raw enum names, internal context tags, exception type names, thread priorities. | C3/C5 |
-| 6 | **Three template sections can never render**: Machine ID, Notes, Artifacts — none is ever populated. | A7 |
-| 7 | **Failure is invisible.** The dashboard only shows the result dialog on success, so a hard failure shows the operator nothing. | C6 |
-| 8 | **Almost no tests.** One test with four `Contains` assertions covers the entire template. | C8 |
+| 6 | **Failure is invisible.** The dashboard only shows the result dialog on success, so a hard failure shows the operator nothing. | C6 |
+| 7 | **Almost no tests.** One test with four `Contains` assertions covers the entire template. | C8 |
+
+The former "three template sections can never render" defect is cleared: `Notes` and
+`Artifacts` were removed (A7) and `MachineId` is populated by the System Info module.
 
 ## What a reader gets today
 

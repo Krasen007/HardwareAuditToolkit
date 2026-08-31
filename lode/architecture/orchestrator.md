@@ -109,11 +109,10 @@ The interpolation renders a raw `TimeSpan` (`00:30:00`) into the report.
 ## Session aggregation
 
 ```csharp
-if (completed.Any(m => m.Status == Failed))                     OverallStatus = Failed;
-else if (completed.Any(m => m.Status is Warning or Unsupported)) OverallStatus = Warning;
-else if (completed.Any(m => m.Status == Cancelled))              OverallStatus = Cancelled;
-else if (completed.All(m => m.Status is Passed or Skipped))      OverallStatus = Passed;
-else                                                            OverallStatus = NotRun; // unreachable
+if      (Any(Failed))    OverallStatus = Failed;
+else if (Any(Warning))   OverallStatus = Warning;
+else if (Any(Cancelled)) OverallStatus = Cancelled;
+else                     OverallStatus = Passed;   // only Passed remains
 ```
 
 Only modules with `CompletedAt` set participate. Two consequences that matter:

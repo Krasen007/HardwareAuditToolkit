@@ -23,8 +23,9 @@ Domain language used across the codebase, the architecture document and this lod
   tag string (`"cpu"`, `"wpm"`, `"pattern"`), currently rendered to the reader.
 - **Operator action** — a logged technician acknowledgement. In practice a
   restatement of the terminal status detail.
-- **Artifact** — intended as a loose file (screenshot, raw log) beside the session
-  JSON. **Never populated by any module.**
+- **Artifact** — a loose file (screenshot, raw log) once imagined beside the session
+  JSON. The whole concept — interface member, model field, template branch — was
+  **removed** in roadmap A7; no module ever produced one.
 - **Overall status** — session-level status, collapsed from the module statuses by
   precedence `Failed > Warning > Cancelled > Passed`.
 
@@ -38,8 +39,8 @@ Domain language used across the codebase, the architecture document and this lod
 - **Module phase** — lifecycle position: `NotStarted → Setup → Running →
   AwaitingOperatorConfirmation → Complete | Cancelled`. Distinct from `TestStatus`.
 - **Test status** — the recorded verdict. See
-  [`reporting/status-vocabulary.md`](reporting/status-vocabulary.md); two of its
-  eight members are never assigned.
+  [`reporting/status-vocabulary.md`](reporting/status-vocabulary.md); six members,
+  every one with a write site (`Skipped`/`Unsupported`, never assigned, removed in A6).
 - **Operator confirmation** — for perceptual checks (monitor uniformity, tracing)
   the technician's acknowledgement *is* the recorded status, by design.
 - **Sub-screen** — an extra view launched from inside a module rather than as its

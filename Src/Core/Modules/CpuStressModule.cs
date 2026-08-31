@@ -61,6 +61,7 @@ public sealed class CpuStressModule : ITestModule
     {
     }
 
+    /// <summary> Test seam ctor: allows a test to inject a worker body that throws to verify a
     /// <paramref name="workerBody"/> is a fault-injection seam: the default runs the real
     /// tight burning loop; tests may substitute a body that throws to verify a worker
     /// failure degrades to <see cref="TestStatus.Failed"/> instead of ending the process.
@@ -84,8 +85,6 @@ public sealed class CpuStressModule : ITestModule
     public IList<string> Findings { get; } = [];
 
     public IList<string> OperatorActions { get; } = [];
-
-    public IList<string> Artifacts { get; } = [];
 
     /// <summary>
     /// Target run duration. Bounded to <see cref="DefaultDurationSeconds"/> so the
@@ -125,7 +124,6 @@ public sealed class CpuStressModule : ITestModule
             Measurements.Clear();
             Findings.Clear();
             OperatorActions.Clear();
-            Artifacts.Clear();
 
             SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
 

@@ -1,7 +1,7 @@
 # Status Vocabulary
 
-`TestStatus` in `Core/IModuleMetadata.cs`. Eight members, copied from architecture
-§4's table and never calibrated against the code that would produce them.
+`TestStatus` in `Core/IModuleMetadata.cs`. Six members. Two — `Skipped` and
+`Unsupported` — were never assigned anywhere and were removed in roadmap A6.
 
 **Read this before touching any module's terminal status.** The vocabulary is the
 single most incoherent thing in the product, and every reporting fix depends on
@@ -17,18 +17,12 @@ settling it.
 | `Failed` | keyboard/mouse/monitor `FlagDefect`; CPU worker throw; orchestrator `Start` threw | |
 | `Warning` | **only two sites**: keyboard confirm-with-untested-keys, System Info collection threw | |
 | `Cancelled` | all five modules, plus three orchestrator paths | overloaded, see below |
-| `Skipped` | **never assigned** | read only, in the aggregation `All(… or Skipped)` |
-| `Unsupported` | **never assigned** | read only, in aggregation, a CSS map, and one UI string |
 
-Verified by grep: `TestStatus.Skipped` and `TestStatus.Unsupported` have **zero write
-sites** in the solution.
-
-`Skipped`'s doc comment — *"The operator or timeout budget chose not to run it"* —
-describes a feature that does not exist. There is no skip affordance in any view, and
-the timeout produces `Cancelled`. `Unsupported` is stranger still: the one capability
-that genuinely can be absent, DDC/CI, **deliberately resolves to `Passed`** because
-the monitor can still pass on visual confirmation. So the app's honest-unavailable
-state exists as prose in a finding and never as a status.
+`Skipped` and `Unsupported` were **deleted** (A6), not produced: there was and is no
+skip affordance in any view (the timeout produces `Cancelled`), and DDC/CI — the one
+capability that genuinely can be absent — deliberately resolves to `Passed` because
+the monitor passes on visual confirmation. The honest-unavailable state lives as
+prose in a finding, never as a status.
 
 ## `Cancelled` means five unrelated things
 
@@ -62,11 +56,10 @@ Open decision [D1](../plans/open-decisions.md) settles this.
 ## Session aggregation hides the audit's shape
 
 ```csharp
-if      (Any(Failed))                 OverallStatus = Failed;
-else if (Any(Warning or Unsupported)) OverallStatus = Warning;
-else if (Any(Cancelled))              OverallStatus = Cancelled;
-else if (All(Passed or Skipped))      OverallStatus = Passed;
-else                                  OverallStatus = NotRun;   // unreachable
+if      (Any(Failed))    OverallStatus = Failed;
+else if (Any(Warning))   OverallStatus = Warning;
+else if (Any(Cancelled)) OverallStatus = Cancelled;
+else                     OverallStatus = Passed;   // only Passed remains
 ```
 
 Only modules with `CompletedAt` set participate. Two consequences:
@@ -77,39 +70,37 @@ Only modules with `CompletedAt` set participate. Two consequences:
    only System Info auto-ran aggregates to `Passed`. Combined with the template
    omitting unstarted modules, that is how an unaudited machine gets a green report.
 
-The final `else` requires a completed result whose status is `Running` or `NotRun`,
-which no completion path can produce — dead code.
+With `Skipped`/`Unsupported` gone, a completed (non-empty) run with no
+failed/warning/cancelled result can only be all-passed, so the aggregation collapses
+to a final `Passed`. The old final `else NotRun` arm was unreachable and is removed.
 
-## Also dead
+## Also dead → now removed
 
-`MouseTestModuleViewModel` has a `TestStatus.Warning` display arm, but the mouse
-module never emits `Warning`. `MonitorTestModuleViewModel` has a
-`TestStatus.Unsupported` arm — `"Unsupported on this hardware."` — which no code path
-can reach.
+- `MouseTestModuleViewModel` had a `TestStatus.Warning` display arm, but the mouse
+  module never emits `Warning` — **removed in A8**. The `Warning` / `Unsupported`
+  display arms were the only UI strings tied to statuses no module ever produces.
 
 ## Colour vocabulary
 
-`HtmlReportTemplate.StatusClass` maps eight statuses onto five classes:
+`HtmlReportTemplate.StatusClass` maps six statuses onto five classes:
 
 | Class | Statuses |
 |---|---|
 | `pass` | `Passed` |
 | `fail` | `Failed` |
-| `warn` | `Warning`, `Unsupported` |
+| `warn` | `Warning` |
 | `cancel` | `Cancelled` |
-| `na` | `NotRun`, `Running`, `Skipped` |
+| `na` | `NotRun`, `Running` |
 
 `Running` sharing grey with `NotRun` means a module still running at export time
 looks like one that was never started.
 
 ## Planned direction
 
-1. **A6** — delete `Skipped` and `Unsupported` (or produce them). An enum member with
-   no write site is a promise the product does not keep.
-2. **B1/D1** — decide what leaving means, then either narrow `Cancelled` or split it.
-3. **C3** — map statuses to display names in a report DTO so `NotRun` never reaches a
+1. **B1/D1** — decide what leaving means, then either narrow `Cancelled` or split it.
+2. **C3** — map statuses to display names in a report DTO so `NotRun` never reaches a
    reader.
-4. **C5** — separate operator-attested verdicts from internal faults so `Failed`
+3. **C5** — separate operator-attested verdicts from internal faults so `Failed`
    stops meaning two things.
 
 ## Rule for new code

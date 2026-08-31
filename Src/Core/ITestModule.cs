@@ -28,9 +28,6 @@ public interface ITestModule
     /// <summary>Operator actions logged by the module (checkpoint confirmations, etc.).</summary>
     IList<string> OperatorActions { get; }
 
-    /// <summary>Paths of artifact files the module produced (screenshots, raw logs, canvases).</summary>
-    IList<string> Artifacts { get; }
-
     /// <summary>Returns true when the module is ready to start
     /// (e.g. no other exclusive module is currently running).</summary>
     bool CheckPreconditions();

@@ -131,10 +131,10 @@ constructed ad hoc, and the reason they must be transient — see
 
 ## Known structural debt
 
-- **Four sources of truth for the module list**: `IModuleMetadata`, the hardcoded
-  list in `DashboardViewModel`, a second hardcoded dictionary in
-  `ModulePlaceholderViewModel`, and a string `switch` in `NavigationService`.
-  Adding a module means editing four places. Roadmap E1.
+- **Three sources of truth for the module list**: `IModuleMetadata`, the hardcoded
+  list in `DashboardViewModel`, and a string `switch` in `NavigationService`.
+  A fourth — the `ModulePlaceholderViewModel` scaffolding dictionary — was removed in
+  roadmap A4. Adding a module still means editing three places. Roadmap E1.
 - **No persistent header.** `MainWindow.xaml` is a bare `ContentControl`; each of
   the six views copy-pastes its own exit overlay and "Back to dashboard" button.
   Roadmap E2.

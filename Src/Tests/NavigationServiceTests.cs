@@ -9,7 +9,7 @@ namespace HardwareAuditToolkit.Tests;
 
 /// <summary>
 /// App-layer tests for <see cref="NavigationService"/> routing (architecture §10 Phase 1):
-/// the module-id → view-model map and the unknown-id → placeholder fallback. A lightweight
+/// the module-id → view-model map and the rejection of unknown module ids. A lightweight
 /// <see cref="IServiceProvider"/> stands in for the DI container so the routing logic is
 /// exercised without constructing the WPF view models or their dependencies.
 /// </summary>
@@ -30,11 +30,9 @@ public class NavigationServiceTests
     }
 
     [Fact]
-    public void NavigateToModule_UnknownId_FallsBackToPlaceholder()
+    public void NavigateToModule_UnknownId_Throws()
     {
-        var screen = NavigateOnce("nonexistent widget");
-
-        Assert.IsType<ModulePlaceholderViewModel>(screen);
+        Assert.Throws<ArgumentException>(() => NavigateOnce("nonexistent widget"));
     }
 
     /// <summary>

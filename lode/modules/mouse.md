@@ -69,8 +69,8 @@ Zero clicks, zero scrolls, zero drags still yields `Passed`. This is the opposit
 philosophy to the keyboard module, which overrides the operator on incomplete
 coverage — open decision [D2](../plans/open-decisions.md).
 
-Because `Warning` is never emitted, the `TestStatus.Warning` arm in the view
-model's status switch is dead code (roadmap A8).
+Because `Warning` is never emitted, the `TestStatus.Warning` display arm that used to
+live in the view model's status switch was removed in roadmap A8 (it was dead code).
 
 ## Screen surface
 
@@ -95,7 +95,7 @@ disposal.
 | **Tracing pollutes the counters** | `ToggleTrace` only flips a view flag; raw capture keeps running, so tracing inflates `LeftClicks`/`DragCount`, which then appear in the confirm finding as evidence. The log is merely hidden, not paused. | A2 |
 | No coverage floor at all | `Passed` on zero input, while the keyboard demands 104/104. | B2 |
 | Defect note is hardcoded | Every failure reads identically; the operator cannot say which button. | C4 |
-| `"duck/bicycle"` never existed | The view-model comment promises two shapes; only the duck was built, and `TraceTargetName` is a constant with no selector. | A2 |
+| ~~`"duck/bicycle"` never existed~~ | ~~The view-model comment promised two shapes; only the duck was built.~~ | Fixed — comment now reads "duck" only (A8) |
 | Internal terms in findings | `"sub-screen"`, `"duck"`, `"(graceful)"` reach the reader. | C5 |
 | Counters never become measurements | Click/scroll/drag totals exist only embedded in the confirm sentence, so the report has no structured mouse data. | C5 |
 | Telegraphic finding voice | `"Clicks — L:1 R:1 M:1; wheel ticks:1; drags:1."` is a data dump unlike any other module's prose. | C5 |

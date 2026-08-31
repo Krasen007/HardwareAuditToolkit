@@ -15,8 +15,6 @@ graph TD
     SEC --> F[Findings ul]
     SEC --> OA[Operator actions ul]
     SEC --> MM[Measurements table: Time / Label / Value / Context]
-    SEC --> AR[Artifacts ul]
-    SEC --> N[h2 Notes?]
 ```
 
 Every section after Findings is conditional on having content.
@@ -33,9 +31,9 @@ private static string StatusClass(TestStatus s) => s switch { … }; // pass/fai
 inject markup. Keep it that way — and note no test currently proves it, so an
 escaping test is part of roadmap C8.
 
-`StatusClass` maps eight statuses onto five CSS classes; `Running` and `Skipped`
-both fall through to the grey `na` bucket, so **a module still running at export
-time is coloured identically to one never run.**
+`StatusClass` maps six statuses onto five CSS classes; `Running` falls through to
+the grey `na` bucket, so **a module still running at export time is coloured
+identically to one never run.**
 
 ## What leaks to the reader
 
@@ -55,17 +53,12 @@ time is coloured identically to one never run.**
 Roadmap C3 introduces a report DTO with status display names so this stops at the
 boundary; roadmap C5 rewrites the finding text itself.
 
-## Dead branches
+## Dead branches — all removed (A7)
 
-Three sections exist in the template and can never render, because nothing ever
-populates their source:
-
-- **Machine ID** — `AuditSession.MachineId` is never assigned anywhere.
-- **Notes** — `AuditSession.Notes` is never assigned; no UI field exists.
-- **Artifacts** — zero `Artifacts.Add` calls in the solution.
-
-Roadmap A7. `MachineId` is the one worth keeping: architecture principle 5 promises
-a "machine-identified" record, and System Info is the natural place to set it.
+There are no un-renderable template sections left. `Notes` and `Artifacts` were never
+populated by anything and their branches were removed in roadmap A7; `MachineId` was
+kept and is populated by the System Info module, honouring architecture principle 5's
+"machine-identified" record.
 
 ## What the document does not say
 
@@ -125,7 +118,7 @@ public void HtmlReportTemplate_RendersHostnameAndModule()
 ```
 
 Untested: the empty-modules branch, the "in progress" vs completed branch, the
-measurements table, operator actions, artifacts, notes, the Machine ID branch,
+measurements table, operator actions, the Machine ID branch,
 `StatusClass` for any status, `Enc` escaping, and `Fmt`.
 
 There is **no golden/approval file**, so any wording or layout change is invisible to

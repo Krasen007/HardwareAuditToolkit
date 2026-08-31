@@ -16,7 +16,6 @@ public interface ITestModule
     IList<ModuleMeasurement> Measurements { get; }
     IList<string> Findings { get; }
     IList<string> OperatorActions { get; }
-    IList<string> Artifacts { get; }
     bool CheckPreconditions();
     void Start(Action<TestStatus> onComplete);  // must return promptly
     void Cancel();
@@ -27,7 +26,7 @@ public interface ITestModule
 
 - `Start` returns promptly; work happens asynchronously.
 - `onComplete` fires **exactly once**.
-- `Start` clears `Findings`/`Measurements`/`OperatorActions`/`Artifacts` — a restart
+- `Start` clears `Findings`/`Measurements`/`OperatorActions` — a restart
   is a clean slate, and anything recorded before `Start` is lost.
 - `Cancel()` releases every OS resource, and so does the view model's `Dispose()`.
 
@@ -88,8 +87,8 @@ confirmation *is* the status. One answer must apply to both — open decision
 - **`FlagDefect` is how anything Fails.** No module auto-fails on missing coverage.
 - **`CheckPreconditions()` returns `true` everywhere.** The gate exists but is never
   used, and declared `RequiredCapabilities` are never enforced.
-- **`Artifacts` is never populated.** Zero `Artifacts.Add` calls exist in the
-  solution; the report section can never render.
+- **`Artifacts` is gone.** The interface member and the model field were never
+  populated by any module and were removed in roadmap A7.
 
 ## Known cross-module defects
 

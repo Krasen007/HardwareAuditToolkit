@@ -214,7 +214,6 @@ public class TestOrchestratorTests
         public IList<ModuleMeasurement> Measurements { get; } = [];
         public IList<string> Findings { get; } = [];
         public IList<string> OperatorActions { get; } = [];
-        public IList<string> Artifacts { get; } = [];
 
         public bool PreconditionsMet { get; set; } = true;
         public bool ThrowOnStart { get; set; }

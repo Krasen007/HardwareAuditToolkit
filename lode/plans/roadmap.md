@@ -20,27 +20,32 @@ graph LR
 
 ## Pass A — Subtract
 
-No decisions required, all cheap to reverse. Start here.
+Aimed at "no decisions required, all cheap to reverse." Status reflects the owner's
+re-scope (landed 2026-08-28): **keep the two sub-screens as features; remove only
+stale/unused code.** A1/A2 are therefore deferred, A3 waits on D3, and A5 (visible
+UI) is skipped.
 
-| # | Action | Primary files |
-|---|---|---|
-| A1 | Delete the WPM sub-screen and `KeyboardTestModule.RecordWpm` | `KeyboardTestModuleViewModel.cs`, `KeyboardTestView.xaml`, `KeyboardTestModule.cs` |
-| A2 | Delete the duck-tracing sub-screen and `MouseTestModule.RecordTrace` | `MouseTestModuleViewModel.cs`, `MouseTestView.xaml(.cs)`, `MouseTestModule.cs` |
-| A3 | Delete the write-only checkpoint store **or** implement the resume prompt. Do not leave it write-only. | `Core/SessionCheckpointStore.cs`, `Core/ISessionCheckpointStore.cs`, `TestOrchestrator.cs`, `App.xaml.cs` |
-| A4 | Delete `ModulePlaceholderViewModel`/`View` and the `NavigationService` default arm | `ViewModels/`, `Views/`, `MainWindow.xaml`, `NavigationService.cs` |
-| A5 | Remove the `exclusive` badge and raw `Category` line from dashboard cards | `DashboardHomeView.xaml`, `DashboardItemViewModel.cs` |
-| A6 | Remove `Skipped` and `Unsupported` from `TestStatus` and their read sites | `IModuleMetadata.cs`, `TestOrchestrator.cs`, `HtmlReportTemplate.cs`, `MonitorTestModuleViewModel.cs` |
-| A7 | Remove the Notes and Artifacts template branches and unused model members; `MachineId` is now populated by SystemInfoModule | `HtmlReportTemplate.cs`, `AuditSession.cs` |
-| A8 | Remove the unreachable mouse `Warning` arm and the stale `duck/bicycle` comment | `MouseTestModuleViewModel.cs` |
+| # | Action | Primary files | Status |
+|---|---|---|---|
+| A1 | Delete the WPM sub-screen and `KeyboardTestModule.RecordWpm` | `KeyboardTestModuleViewModel.cs`, `KeyboardTestView.xaml`, `KeyboardTestModule.cs` | **Deferred** — feature kept |
+| A2 | Delete the duck-tracing sub-screen and `MouseTestModule.RecordTrace` | `MouseTestModuleViewModel.cs`, `MouseTestView.xaml(.cs)`, `MouseTestModule.cs` | **Deferred** — feature kept |
+| A3 | Delete the write-only checkpoint store **or** implement the resume prompt. Do not leave it write-only. | `Core/SessionCheckpointStore.cs`, `Core/ISessionCheckpointStore.cs`, `TestOrchestrator.cs`, `App.xaml.cs` | Pending — needs [D3](open-decisions.md) |
+| A4 | Delete `ModulePlaceholderViewModel`/`View` and the `NavigationService` default arm | `ViewModels/`, `Views/`, `MainWindow.xaml`, `NavigationService.cs` | **Done** — unknown id now throws |
+| A5 | Remove the `exclusive` badge and raw `Category` line from dashboard cards | `DashboardHomeView.xaml`, `DashboardItemViewModel.cs` | **Deferred** — renders visible UI; owner skipped |
+| A6 | Remove `Skipped` and `Unsupported` from `TestStatus` and their read sites; drop the dead aggregation arm | `IModuleMetadata.cs`, `TestOrchestrator.cs`, `HtmlReportTemplate.cs`, `MonitorTestModuleViewModel.cs` | **Done** |
+| A7 | Remove the Notes and Artifacts template branches and the unused model members; `MachineId` is populated by SystemInfoModule | `HtmlReportTemplate.cs`, `AuditSession.cs`, `ITestModule.cs`, 5 modules, `TestOrchestrator.cs` | **Done** — full `Artifacts` chain removed |
+| A8 | Remove the unreachable mouse `Warning` arm and the stale `duck/bicycle` comment | `MouseTestModuleViewModel.cs` | **Done** |
 
 **Acceptance:** zero warnings; `dotnet test` green; no `TestStatus` member without
-a write site; no interface with a write-only method.
+a write site; no interface with a write-only method. Met for the landed subset
+(A4/A6/A7/A8): builds with 0 warnings, 61 tests pass, and `Artifacts`/`Notes`/
+`Skipped`/`Unsupported` have no remaining source references.
 
 **Rationale:** the sub-screens measure the *operator* (typing speed, hand
 steadiness), not the hardware, and neither affects any status. Worse, both leave
 raw capture running, so typing the WPM pangram silently fills the keyboard
-coverage metric that decides Pass vs `Warning`. See
-[`../modules/keyboard.md`](../modules/keyboard.md) and
+coverage metric that decides Pass vs `Warning`. The owner has chosen to keep them
+for now (A1/A2 deferred); see [`../modules/keyboard.md`](../modules/keyboard.md) and
 [`../modules/mouse.md`](../modules/mouse.md).
 
 ## Pass B — Decide the semantics

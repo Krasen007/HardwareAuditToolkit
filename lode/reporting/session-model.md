@@ -13,14 +13,14 @@ classDiagram
         hostname, sessionId
         startedAt, completedAt
         overallStatus
-        machineId, notes
+        machineId
         reportPath, jsonPath
     }
     class ModuleResult {
         moduleId, displayName, status
         startedAt, completedAt
         findings[], measurements[]
-        operatorActions[], artifacts[]
+        operatorActions[]
     }
     class ModuleMeasurement {
         timestamp, label, value, context
@@ -79,11 +79,10 @@ See [`../architecture/orchestrator.md`](../architecture/orchestrator.md).
 | `modules[]` | yes | only modules that were *started* |
 | `overallStatus` | yes | precedence-collapsed, see [status-vocabulary](status-vocabulary.md) |
 | `machineId` | yes | set by `TestOrchestrator` from the System Info module's snapshot (`Win32_ComputerSystemProduct.UUID`, falling back to BIOS serial number) |
-| `notes` | **never** | no UI field exists |
 | `reportPath` / `jsonPath` | **null in the exported JSON** | set by `Succeed()` *after* serialisation, so the file always reports null paths |
-| `artifacts[]` | **never** | zero `Artifacts.Add` calls in the solution; serialises as `[]` for every module |
 
-Three of ten session fields are dead. Roadmap A7 removes `notes` and the artifact template branches; `machineId` is now populated by the System Info module.
+`notes` and `artifacts[]` no longer exist — they were never populated and were removed
+in roadmap A7; `machineId` is populated by the System Info module.
 
 ## `ModuleMeasurement.Context`
 
@@ -116,8 +115,7 @@ report DTO — so the two artifacts differ in ways nobody chose:
 | | JSON | HTML |
 |---|---|---|
 | `moduleId` | present | omitted |
-| `machineId`/`notes` | emitted as `null` | omitted |
-| `artifacts` | `[]` per module | omitted |
+| `machineId` | emitted as `null` | omitted |
 | Empty session | `"modules": []` | prose: "No modules were run in this session." |
 | Timestamps | ISO round-trip | `"u"` format, UTC only |
 | Schema marker | **none** | n/a |
@@ -128,6 +126,8 @@ shape; roadmap E4 adds `schemaVersion`.
 ## Rules
 
 1. Adding a property means adding `[JsonPropertyName]` — the contract is explicit.
-2. Do not add a field the UI cannot populate. Four already exist.
+2. Do not add a field the UI cannot populate. A7 deleted the two that existed
+   (`notes`, `artifacts`); `reportPath`/`jsonPath` stay null-in-export until roadmap
+   C1/C7.
 3. `Findings` text is read by someone who never saw the machine. Internal
    diagnostics belong in `IDiagnosticLog`.

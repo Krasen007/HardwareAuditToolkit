@@ -61,8 +61,6 @@ public sealed class KeyboardTestModule : ITestModule
 
     public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = [];
-
     /// <summary>Keys registered at least once this run.</summary>
     public int PressedCount
     {
@@ -98,7 +96,6 @@ public sealed class KeyboardTestModule : ITestModule
             Measurements.Clear();
             Findings.Clear();
             OperatorActions.Clear();
-            Artifacts.Clear();
             ResetStates();
 
             _handler = OnKey;

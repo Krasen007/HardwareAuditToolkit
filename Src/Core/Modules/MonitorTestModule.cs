@@ -69,8 +69,6 @@ public sealed class MonitorTestModule : ITestModule
 
     public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = [];
-
     /// <summary>Currently selected display index (DDC/CI target).</summary>
     public int SelectedMonitorIndex
     {
@@ -207,7 +205,6 @@ public sealed class MonitorTestModule : ITestModule
             Measurements.Clear();
             Findings.Clear();
             OperatorActions.Clear();
-            Artifacts.Clear();
 
             int idx = _selectedIndex;
             Task.Run(() =>

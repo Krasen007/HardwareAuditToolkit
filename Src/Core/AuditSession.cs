@@ -50,12 +50,6 @@ public class AuditSession
     public string? MachineId { get; set; }
 
     /// <summary>
-    /// Gets or sets the user comment/notes for this session.
-    /// </summary>
-    [JsonPropertyName("notes")]
-    public string? Notes { get; set; }
-
-    /// <summary>
     /// Path to the generated HTML report.
     /// </summary>
     [JsonPropertyName("reportPath")]
@@ -120,13 +114,6 @@ public class ModuleResult
     /// </summary>
     [JsonPropertyName("operatorActions")]
     public List<string> OperatorActions { get; set; } = [];
-
-    /// <summary>
-    /// Loose artifact files produced by the module (screenshots, raw event logs,
-    /// exported canvases) — stored next to the session JSON.
-    /// </summary>
-    [JsonPropertyName("artifacts")]
-    public List<string> Artifacts { get; set; } = [];
 }
 
 /// <summary>

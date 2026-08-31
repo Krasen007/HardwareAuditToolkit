@@ -76,8 +76,6 @@ public sealed class MouseTestModule : ITestModule
 
     public IList<string> OperatorActions { get; } = [];
 
-    public IList<string> Artifacts { get; } = [];
-
     public int LeftClicks { get { lock (_gate) return _leftClicks; } }
     public int RightClicks { get { lock (_gate) return _rightClicks; } }
     public int MiddleClicks { get { lock (_gate) return _middleClicks; } }
@@ -100,7 +98,6 @@ public sealed class MouseTestModule : ITestModule
             Measurements.Clear();
             Findings.Clear();
             OperatorActions.Clear();
-            Artifacts.Clear();
             ResetDragState();
             _traceRecorded = false;
 
