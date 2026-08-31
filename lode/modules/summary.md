@@ -95,7 +95,7 @@ confirmation *is* the status. One answer must apply to both — open decision
 | Defect | Detail |
 |---|---|
 | Two sub-screens measure the operator, not the hardware | WPM typing test and duck tracing. Neither affects any status; both leave raw capture running so they pollute coverage and counters. Roadmap A1/A2 |
-| Operator cannot describe a defect | `FlagDefect(note)` accepts text but all three call sites pass a hardcoded constant. Every failure reads identically. Roadmap C4 |
+| Operator defect note | Each screen has a "What's wrong?" field bound to `FlagDefect(note)`; blank notes fall back to the module's default wording. Cleared on Start/Reset. |
 | Auto-start policy differs per module | Decided per implementation phase rather than as one decision. Only CPU stress documents its choice. Roadmap B3 |
 | Keyboard has no device-loss handling | The mouse module subscribes to `DeviceTopologyChangedMessage` and records an honest disconnect finding; the keyboard does not, so an unplugged keyboard mid-test is unrecorded |
 | Engineering vocabulary in findings | `BelowNormal`, `"(graceful)"`, `"sub-screen"`, `"duck"`, exception type names. Roadmap C5 |

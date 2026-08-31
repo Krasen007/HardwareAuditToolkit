@@ -85,6 +85,10 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
     [ObservableProperty]
     private string _deviceWarning = string.Empty;
 
+    /// <summary>Operator-entered description of what is wrong, sent to <see cref="MonitorTestModule.FlagDefect"/>.</summary>
+    [ObservableProperty]
+    private string _defectNote = string.Empty;
+
     public MonitorTestModuleViewModel(
         INavigationService navigation,
         TestOrchestrator orchestrator,
@@ -219,6 +223,7 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
     private void StartTest()
     {
         StatusDetail = "Running… inspect patterns on the selected display.";
+        DefectNote = string.Empty;
         IsCompleted = false;
         FinalStatusText = string.Empty;
         DeviceWarning = string.Empty;
@@ -240,7 +245,14 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
 
     [RelayCommand(CanExecute = nameof(CanFlag))]
     private void FlagDefect()
-        => _module.FlagDefect("Operator flagged a monitor defect (dead pixel, uniformity, or color).");
+        => _module.FlagDefect(NoteOrNull());
+
+    /// <summary>Trims the operator's defect note; null when blank (module supplies its default wording).</summary>
+    private string? NoteOrNull()
+    {
+        string trimmed = DefectNote.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
 
     private bool CanFlag => IsRunning;
 
@@ -254,6 +266,7 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
 
         _module.Reset();
         RefreshDdc();
+        DefectNote = string.Empty;
         IsCompleted = false;
         FinalStatusText = string.Empty;
         StatusDetail = "Reset. Press Start to begin the monitor test.";

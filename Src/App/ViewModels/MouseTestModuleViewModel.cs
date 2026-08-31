@@ -80,6 +80,10 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     [ObservableProperty]
     private string _deviceWarning = string.Empty;
 
+    /// <summary>Operator-entered description of what is wrong, sent to <see cref="MouseTestModule.FlagDefect"/>.</summary>
+    [ObservableProperty]
+    private string _defectNote = string.Empty;
+
     /// <summary>True when a device-disconnect warning is active (drives banner visibility).</summary>
     [ObservableProperty]
     private bool _isDeviceWarning;
@@ -227,6 +231,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
     {
         LogLines.Clear();
         LeftClicks = RightClicks = MiddleClicks = WheelTicks = DragCount = 0;
+        DefectNote = string.Empty;
         IsCompleted = false;
         FinalStatusText = string.Empty;
         DeviceWarning = string.Empty;
@@ -249,7 +254,14 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
 
     [RelayCommand(CanExecute = nameof(CanFlag))]
     private void FlagDefect()
-        => _module.FlagDefect("Operator flagged a defective mouse function.");
+        => _module.FlagDefect(NoteOrNull());
+
+    /// <summary>Trims the operator's defect note; null when blank (module supplies its default wording).</summary>
+    private string? NoteOrNull()
+    {
+        string trimmed = DefectNote.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
 
     private bool CanFlag => IsRunning;
 
@@ -262,6 +274,7 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
         }
 
         _module.Reset();
+        DefectNote = string.Empty;
         LogLines.Clear();
         LeftClicks = RightClicks = MiddleClicks = WheelTicks = DragCount = 0;
         TracePoints.Clear();

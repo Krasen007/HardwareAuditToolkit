@@ -67,7 +67,7 @@ The report is the product. This pass is the highest-value work in the plan.
 | C1 | Stamp `CompletedAt` **before** serialisation; derive the filename from export time so re-export never overwrites |
 | C2 | Render **every** module including untested ones, and lead with counts. A partial audit must never read `Passed`. |
 | C3 | Introduce a report DTO between `AuditSession` and both writers, with status display names, so raw enums and internal tags stop reaching the reader |
-| C4 | Wire `FlagDefect(note)` to a real text field on all three screens — the highest-value missing field in the product |
+| C4 | Done — "What's wrong?" note field bound to `FlagDefect(note)` on keyboard/mouse/monitor screens (blank note falls back to the module's default wording); cleared on Start/Reset |
 | C5 | Normalise finding voice; route internal diagnostics out of `Findings` into `IDiagnosticLog` |
 | C6 | Surface export failure honestly; stop returning `true` when the clipboard write threw |
 | C7 | Show the HTML path as the primary "Saved to" line — the HTML is the human deliverable |

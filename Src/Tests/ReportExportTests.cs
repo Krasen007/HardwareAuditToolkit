@@ -64,7 +64,7 @@ public class ReportExportTests
     }
 
     [Fact]
-    public void Export_JsonRoundTripsSession()
+    public void Export_JsonRoundTripsReportModel()
     {
         string dir = Path.Combine(Path.GetTempPath(), $"hat_export_{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);
@@ -79,13 +79,13 @@ public class ReportExportTests
             });
 
             string json = File.ReadAllText(result.JsonPath!);
-            var round = JsonSerializer.Deserialize<AuditSession>(json);
+            var round = JsonSerializer.Deserialize<ReportModel>(json);
 
             Assert.NotNull(round);
             Assert.Equal("TESTHOST", round!.Hostname);
-            Assert.Equal(TestStatus.Passed, round.OverallStatus);
+            Assert.Equal("Passed", round.OverallStatus);
             Assert.Single(round.Modules);
-            Assert.Equal(TestStatus.Passed, round.Modules[0].Status);
+            Assert.Equal("Passed", round.Modules[0].Status);
             Assert.Equal("All keys registered.", round.Modules[0].Findings[0]);
         }
         finally
@@ -186,7 +186,8 @@ public class ReportExportTests
     public void HtmlReportTemplate_RendersHostnameAndModule()
     {
         var session = BuildSession();
-        var html = new HtmlReportTemplate().Render(session);
+        var model = ReportModelFactory.Build(session);
+        var html = new HtmlReportTemplate().Render(model);
 
         Assert.Contains("TESTHOST", html);
         Assert.Contains("Keyboard Test", html);

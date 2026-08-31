@@ -6,12 +6,17 @@ using HardwareAuditToolkit.Core.Reporting;
 namespace HardwareAuditToolkit.App.Views;
 
 /// <summary>
-/// Modal shown after a successful export (§10 Phase 6). Displays the saved location and
-/// lets the operator open the HTML report in the default browser or reveal the file in
-/// File Explorer, so the result is immediately verifiable rather than just acknowledged.
+/// Modal shown after an export attempt (§10 Phase 6). Leads with the HTML report path —
+/// the human deliverable (roadmap C7) — and lists the JSON data path beneath it, letting
+/// the operator open the HTML in the default browser or reveal the folder in Explorer.
+/// A clipboard-only success (no file) shows that state explicitly.
 /// </summary>
 public sealed partial class ExportResultDialog : Window
 {
+    /// <summary>The HTML report path — the primary "Saved to" line.</summary>
+    public string ReportPath { get; }
+
+    /// <summary>The JSON data path, shown as the secondary line.</summary>
     public string JsonPath { get; }
 
     public bool HasFile { get; }
@@ -20,28 +25,39 @@ public sealed partial class ExportResultDialog : Window
     {
         Application.LoadComponent(this, new Uri("/Views/ExportResultDialog.xaml", UriKind.Relative));
 
-        JsonPath = jsonPath ?? "(saved to clipboard)";
-        HasFile = !string.IsNullOrEmpty(jsonPath) && File.Exists(jsonPath);
-        HtmlPath = htmlPath;
+        ReportPath = htmlPath ?? jsonPath ?? "(saved to clipboard)";
+        JsonPath = jsonPath ?? "(not saved)";
+        HasFile = (htmlPath is not null && File.Exists(htmlPath)) ||
+                  (jsonPath is not null && File.Exists(jsonPath));
+        _htmlPath = htmlPath;
+        _jsonPath = jsonPath;
         DataContext = this;
     }
 
-    private string? HtmlPath { get; }
+    private readonly string? _htmlPath;
+    private readonly string? _jsonPath;
 
     private void OpenReport_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(HtmlPath) && File.Exists(HtmlPath))
+        if (!string.IsNullOrEmpty(_htmlPath) && File.Exists(_htmlPath))
         {
-            Open(HtmlPath);
+            Open(_htmlPath);
+        }
+        else if (!string.IsNullOrEmpty(_jsonPath) && File.Exists(_jsonPath))
+        {
+            Open(_jsonPath);
         }
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(JsonPath) && JsonPath != "(saved to clipboard)" && File.Exists(JsonPath))
+        string? target = (_htmlPath is not null && File.Exists(_htmlPath)) ? _htmlPath
+            : (_jsonPath is not null && File.Exists(_jsonPath)) ? _jsonPath
+            : null;
+        if (target is not null)
         {
-            // /select, highlights the file in an Explorer window.
-            Open("explorer.exe", $"/select,\"{JsonPath}\"");
+            // /select highlights the file in an Explorer window.
+            Open("explorer.exe", $"/select,\"{target}\"");
         }
     }
 

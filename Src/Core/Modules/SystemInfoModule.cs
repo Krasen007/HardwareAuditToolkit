@@ -86,7 +86,7 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
 
                     cb?.Invoke(TestStatus.Passed);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     Action<TestStatus>? cb;
                     lock (_gate)
@@ -96,7 +96,9 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
                             return;
                         }
 
-                        Findings.Add($"System info collection failed: {ex.Message}");
+                        // The underlying WMI reason is an internal diagnostic; the reader
+                        // only needs to know the inventory is incomplete (roadmap C5).
+                        Findings.Add("System information could not be collected; the inventory may be incomplete.");
                         CurrentPhase = ModulePhase.Complete;
                         cb = _onComplete;
                         _onComplete = null;

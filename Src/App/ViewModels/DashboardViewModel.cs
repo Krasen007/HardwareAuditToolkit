@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HardwareAuditToolkit.App.Services;
@@ -22,18 +23,24 @@ public sealed partial class DashboardViewModel(INavigationService navigation, Re
         => navigation.NavigateToDashboard();
 
     /// <summary>
-    /// Runs the §9.6 export cascade for the current session, then shows the saved
-    /// location when a file was written. The dashboard carries an always-available
-    /// Export Report button (README Phase 6) so the report is reachable without
-    /// completing any test module.
+    /// Runs the §9.6 export cascade for the current session, then shows the outcome. A
+    /// hard failure is surfaced explicitly instead of showing the operator nothing
+    /// (roadmap C6); any partial success (file or clipboard) opens the result dialog.
     /// </summary>
     [RelayCommand]
     private void ExportReport()
     {
         var result = reportExport.Export();
-        if (result.Success && result.JsonPath is not null)
+        if (!result.Success)
         {
-            ExportResultDialog.ShowResult(result);
+            MessageBox.Show(
+                result.Message ?? "The audit report could not be written to any location.",
+                "Export Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
         }
+
+        ExportResultDialog.ShowResult(result);
     }
 }

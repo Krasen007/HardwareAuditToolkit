@@ -134,6 +134,13 @@
                 <TextBlock Text="{Binding FinalStatusText}" FontSize="14" FontWeight="SemiBold" Foreground="#FFD479"
                            Margin="0,0,0,10" Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}" />
 
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <TextBlock Text="What's wrong? (optional, recorded if you flag a defect)"
+                               FontSize="12" Foreground="#9AAA9A" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBox Text="{Binding DefectNote, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             MinWidth="420" MaxWidth="640" Padding="8,5" FontSize="13" />
+                </StackPanel>
+
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Start test" Command="{Binding StartTestCommand}"
                             Padding="18,9" FontSize="14" FontWeight="SemiBold"

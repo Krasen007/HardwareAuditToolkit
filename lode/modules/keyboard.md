@@ -94,7 +94,7 @@ calls `CancelModule` on disposal — which is why walking away records `Cancelle
 | WPM sub-screen measures the operator | Gross WPM and character accuracy against a hardcoded pangram (`"The quick brown fox…"`). Does not affect any status. Tests typing skill, not hardware. | A1 |
 | **The WPM screen pollutes coverage** | `ToggleWpm` only flips a view flag; raw capture keeps running, so typing the pangram silently fills the very coverage metric that decides Pass vs `Warning`. | A1 |
 | WPM data can be silently dropped | `RecordWpm` has no `IsRunning` guard, and the sub-screen is reachable before `Start` (which clears findings) and after completion (result already finalised) — yet the screen promises "recorded to the session". | A1 |
-| Defect note is hardcoded | `FlagDefect("Operator flagged a defective key.")` — the operator can never say *which* key or *what* was wrong, though the parameter exists and tests use it. | C4 |
+| Defect note wired | The "What's wrong?" field sends the operator's text to `FlagDefect(note)`; blank falls back to the default wording. | Done (C4) |
 | No device-loss handling | Unlike the mouse module, this one never subscribes to `DeviceTopologyChangedMessage`; an unplugged keyboard mid-test is unrecorded. | — |
 | Coverage numbers only on failure | A clean pass records no numbers at all; `PressedCount`/`ExpectedCount` are never written as measurements, so the report cannot show "104/104". | C2/C5 |
 | Dead default strings | `StatusDetail = "Press Start to begin…"` and `ProgressText = "0 / 0 keys tested"` are overwritten by auto-start before ever being seen. | A1/B3 |

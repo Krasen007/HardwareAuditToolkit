@@ -155,7 +155,7 @@ public sealed class MouseTestModule : ITestModule
             Findings.Add(summary);
             if (!_traceRecorded)
             {
-                Findings.Add("Operator confirmed without running the tracing sub-screen.");
+                Findings.Add("Operator confirmed without running the tracing test.");
             }
 
             cb = StopInternal(TestStatus.Passed, "Passed — operator confirmed all mouse functions work.");
@@ -209,7 +209,7 @@ public sealed class MouseTestModule : ITestModule
                 Value = $"{coveragePercent:0.0} %",
                 Context = "trace",
             });
-            Findings.Add($"Tracing test ({shape}): {coveragePercent:0.0}% path coverage " +
+            Findings.Add($"Tracing test: {coveragePercent:0.0}% path coverage " +
                          $"({coveredPoints}/{targetPoints} target points hit).");
         }
     }
@@ -340,7 +340,7 @@ public sealed class MouseTestModule : ITestModule
             if (_lastMouseCount > 0 && message.MouseCount == 0 && IsRunning && anyHeld)
             {
                 flag = true;
-                log = "Mouse disconnected while a button was held — drag/drop incomplete (graceful).";
+                log = "Mouse disconnected while a button was held — the drag/drop was left incomplete.";
                 Findings.Add(log);
             }
 

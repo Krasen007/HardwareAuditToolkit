@@ -1,0 +1,71 @@
+{
+  "hostname": "GOLDENHOST",
+  "sessionId": "00000000000000000000000000000001",
+  "startedAt": "2026-08-19T10:00:00Z",
+  "completedAt": "2026-08-19T10:30:00Z",
+  "machineId": "10000000-0000-0000-0000-000000000001",
+  "overallStatus": "In progress",
+  "statusCounts": {
+    "passed": 0,
+    "failed": 0,
+    "warning": 0,
+    "cancelled": 0,
+    "running": 1,
+    "notRun": 4,
+    "total": 5
+  },
+  "reportPath": null,
+  "jsonPath": null,
+  "modules": [
+    {
+      "moduleId": "keyboard",
+      "displayName": "Keyboard Test",
+      "status": "Running",
+      "startedAt": "2026-08-19T10:00:00Z",
+      "completedAt": null,
+      "findings": [],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "mouse",
+      "displayName": "Mouse Test",
+      "status": "Not run",
+      "startedAt": null,
+      "completedAt": null,
+      "findings": [],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "monitor",
+      "displayName": "Monitor Test",
+      "status": "Not run",
+      "startedAt": null,
+      "completedAt": null,
+      "findings": [],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "system",
+      "displayName": "System Info",
+      "status": "Not run",
+      "startedAt": null,
+      "completedAt": null,
+      "findings": [],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "stress",
+      "displayName": "CPU Stress Test",
+      "status": "Not run",
+      "startedAt": null,
+      "completedAt": null,
+      "findings": [],
+      "operatorActions": [],
+      "measurements": []
+    }
+  ]
+}

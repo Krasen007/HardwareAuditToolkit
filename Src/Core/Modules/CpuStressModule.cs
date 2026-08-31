@@ -142,7 +142,7 @@ public sealed class CpuStressModule : ITestModule
                 worker.Start();
             }
 
-            Findings.Add($"Burn-in started on {cores} logical cores at BelowNormal priority; target duration {_duration:g}.");
+            Findings.Add($"Burn-in started on {cores} logical cores; target duration {_duration:g}.");
 
             // Live telemetry, then self-stop at the duration cap. Capture the CTS
             // so the completion continuation can prove it belongs to THIS run: a
@@ -238,7 +238,9 @@ public sealed class CpuStressModule : ITestModule
         // the gate (IsRunning is now false) instead of deadlocking the join.
         JoinWorkers();
 
-        Findings.Add($"Burn-in worker failed ({ex.GetType().Name}): {ex.Message}");
+        // The exception type/message is an internal diagnostic, not reader information;
+        // RunBurn already routed it to the diagnostics log. The finding stays human-facing.
+        Findings.Add("Burn-in worker failed; the run was ended early.");
         cb?.Invoke(TestStatus.Failed);
     }
 

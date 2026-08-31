@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hardware Audit Report</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; color: #222; margin: 24px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 16px; margin: 24px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    .meta { color: #555; font-size: 13px; }
+    .meta span { margin-right: 18px; }
+    .counts { font-weight: 600; margin: 10px 0 0; font-size: 13px; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #2D2D30; color: #fff; }
+    tr:nth-child(even) td { background: #f6f6f6; }
+    .status { font-weight: 600; }
+    .pass { color: #1e7e34; } .fail { color: #c0392b; } .warn { color: #b9770e; }
+    .na { color: #888; } .cancel { color: #6c3483; }
+    ul { margin: 4px 0 4px 18px; padding: 0; }
+    @media print { body { margin: 12px; } }
+  </style>
+</head>
+<body>
+  <h1>Hardware Audit Report</h1>
+  <div class="meta">
+    <span><b>Host:</b> GOLDENHOST</span>
+    <span><b>Session:</b> 00000000000000000000000000000001</span>
+    <span><b>Started:</b> 2026-08-19 10:00:00Z (local 2026-08-19 10:00:00)</span>
+    <span><b>Completed:</b> 2026-08-19 10:30:00Z (local 2026-08-19 10:30:00)</span>
+    <span><b>Machine ID:</b> 10000000-0000-0000-0000-000000000001</span>
+  </div>
+  <p class="meta">Overall status: <span class="status na">Partial — not all modules were tested</span></p>
+  <p class="counts">1 passed, 4 not run.</p>
+  <h2>Modules</h2>
+  <table>
+    <thead><tr><th>Module</th><th>Status</th><th>Started</th><th>Completed</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Keyboard Test</td>
+        <td class="status pass">Passed</td>
+        <td>2026-08-19 10:00:00Z</td>
+        <td>2026-08-19 10:05:00Z</td>
+      </tr>
+      <tr>
+        <td>Mouse Test</td>
+        <td class="status na">Not run</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>Monitor Test</td>
+        <td class="status na">Not run</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>System Info</td>
+        <td class="status na">Not run</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      <tr>
+        <td>CPU Stress Test</td>
+        <td class="status na">Not run</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+    </tbody>
+  </table>
+  <h2>Keyboard Test — Passed</h2>
+  <p><b>Findings</b></p><ul>
+    <li>Operator confirmed: every expected key registered at least once.</li>
+  </ul>
+  <h2>Mouse Test — Not run</h2>
+  <h2>Monitor Test — Not run</h2>
+  <h2>System Info — Not run</h2>
+  <h2>CPU Stress Test — Not run</h2>
+</body>
+</html>

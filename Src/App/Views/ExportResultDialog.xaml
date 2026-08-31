@@ -14,6 +14,9 @@
     <StackPanel Margin="20">
         <TextBlock Text="Audit report exported" FontSize="15" FontWeight="SemiBold" Foreground="#E8E8E8" />
         <TextBlock Margin="0,12,0,0" Text="Saved to:" FontWeight="SemiBold" Foreground="#CCCCCC" />
+        <TextBox Text="{Binding ReportPath, Mode=OneWay}" IsReadOnly="True" Margin="0,4,0,0"
+                 TextWrapping="Wrap" Background="#1E1E1E" Foreground="#E8E8E8" BorderBrush="#3F3F46" />
+        <TextBlock Margin="0,8,0,0" Text="JSON data:" FontWeight="SemiBold" Foreground="#CCCCCC" />
         <TextBox Text="{Binding JsonPath, Mode=OneWay}" IsReadOnly="True" Margin="0,4,0,0"
                  TextWrapping="Wrap" Background="#1E1E1E" Foreground="#E8E8E8" BorderBrush="#3F3F46" />
         <TextBlock Margin="0,4,0,0" Text="No file was written — the audit JSON is on the clipboard."

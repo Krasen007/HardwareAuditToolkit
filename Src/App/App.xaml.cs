@@ -231,8 +231,14 @@ public partial class App : Application
         services.AddSingleton<TestOrchestrator>();
 
         // Phase 6 — reporting: pure exporter (Core) + WPF-bound export service (App).
+        // The service receives the full module roster so the exported report can name
+        // modules that were never started (roadmap C2) instead of silently omitting them.
         services.AddSingleton<Core.Reporting.SessionExporter>();
-        services.AddSingleton<ReportExportService>();
+        services.AddSingleton<ReportExportService>(sp =>
+            new ReportExportService(
+                sp.GetRequiredService<Core.Reporting.SessionExporter>(),
+                sp.GetRequiredService<AuditSession>(),
+                sp.GetServices<ITestModule>()));
 
         services.AddSingleton<MainWindow>();
     }

@@ -21,4 +21,10 @@
     <ProjectReference Include="..\App\HardwareAuditToolkit.App.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Golden\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

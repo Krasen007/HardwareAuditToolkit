@@ -1,0 +1,81 @@
+{
+  "hostname": "GOLDENHOST",
+  "sessionId": "00000000000000000000000000000001",
+  "startedAt": "2026-08-19T10:00:00Z",
+  "completedAt": "2026-08-19T10:30:00Z",
+  "machineId": "10000000-0000-0000-0000-000000000001",
+  "overallStatus": "Failed",
+  "statusCounts": {
+    "passed": 4,
+    "failed": 1,
+    "warning": 0,
+    "cancelled": 0,
+    "running": 0,
+    "notRun": 0,
+    "total": 5
+  },
+  "reportPath": null,
+  "jsonPath": null,
+  "modules": [
+    {
+      "moduleId": "keyboard",
+      "displayName": "Keyboard Test",
+      "status": "Passed",
+      "startedAt": "2026-08-19T10:00:00Z",
+      "completedAt": "2026-08-19T10:05:00Z",
+      "findings": [
+        "Operator confirmed: every expected key registered at least once."
+      ],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "mouse",
+      "displayName": "Mouse Test",
+      "status": "Passed",
+      "startedAt": "2026-08-19T10:00:00Z",
+      "completedAt": "2026-08-19T10:05:00Z",
+      "findings": [
+        "Operator confirmed. Clicks \u2014 L:3 R:1 M:0; wheel ticks:5; drags:1."
+      ],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "monitor",
+      "displayName": "Monitor Test",
+      "status": "Failed",
+      "startedAt": "2026-08-19T10:00:00Z",
+      "completedAt": "2026-08-19T10:05:00Z",
+      "findings": [
+        "Operator flagged a dead pixel in the lower-left corner."
+      ],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "system",
+      "displayName": "System Info",
+      "status": "Passed",
+      "startedAt": "2026-08-19T10:00:00Z",
+      "completedAt": "2026-08-19T10:05:00Z",
+      "findings": [
+        "Inventory captured for GOLDENHOST: Intel ABC, 16 GB, 2 fixed disk(s)."
+      ],
+      "operatorActions": [],
+      "measurements": []
+    },
+    {
+      "moduleId": "stress",
+      "displayName": "CPU Stress Test",
+      "status": "Passed",
+      "startedAt": "2026-08-19T10:00:00Z",
+      "completedAt": "2026-08-19T10:05:00Z",
+      "findings": [
+        "Burn-in completed the full target duration of 00:05:00."
+      ],
+      "operatorActions": [],
+      "measurements": []
+    }
+  ]
+}

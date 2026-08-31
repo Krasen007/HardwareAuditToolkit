@@ -18,32 +18,52 @@ public sealed class ReportExportService
 {
     private readonly SessionExporter _exporter;
     private readonly AuditSession _session;
+    private readonly IEnumerable<ITestModule>? _modules;
     private readonly ReportExportOptions? _optionsOverride;
 
-    public ReportExportService(SessionExporter exporter, AuditSession session) : this(exporter, session, null)
+    public ReportExportService(SessionExporter exporter, AuditSession session)
+        : this(exporter, session, modules: null, optionsOverride: null)
+    {
+    }
+
+    /// <summary>
+    /// App-side constructor that supplies the full module roster so the exported report can
+    /// name modules that were never started (architecture §9.6 / roadmap C2).
+    /// </summary>
+    public ReportExportService(SessionExporter exporter, AuditSession session, IEnumerable<ITestModule> modules)
+        : this(exporter, session, modules, null)
     {
     }
 
     /// <summary>
     /// Test/embedded seam: lets a caller supply the full §9.6 cascade options (including
     /// deeming every directory unwritable) so the failure branch can be exercised without
-    /// WPF dialogs. Production callers use the two-argument constructor.
+    /// WPF dialogs. Production callers use the two- or three-argument constructors.
     /// </summary>
-    internal ReportExportService(SessionExporter exporter, AuditSession session, ReportExportOptions? optionsOverride)
+    internal ReportExportService(SessionExporter exporter, AuditSession session, ReportExportOptions optionsOverride)
+        : this(exporter, session, modules: null, optionsOverride)
+    {
+    }
+
+    private ReportExportService(SessionExporter exporter, AuditSession session, IEnumerable<ITestModule>? modules, ReportExportOptions? optionsOverride)
     {
         _exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
         _session = session ?? throw new ArgumentNullException(nameof(session));
+        _modules = modules;
         _optionsOverride = optionsOverride;
     }
 
     /// <summary>
-    /// Runs the full export cascade for the current session. Marks the session completed
-    /// only once a writable location has actually produced the report (or the clipboard
-    /// last resort preserved it), so a session is not stamped "completed" when every
-    /// persist path failed, then delegates to the cascade with the §9.6 candidates.
+    /// Runs the full export cascade for the current session. Stamps the session completed
+    /// <em>before</em> serialization so the very first export reads as completed (roadmap
+    /// C1); if every persist path fails the session is reverted so an un-exported audit is
+    /// not marked "completed". Delegates to the cascade with the §9.6 candidates.
     /// </summary>
     public ReportExportResult Export()
     {
+        DateTime? previous = _session.CompletedAt;
+        _session.CompletedAt ??= DateTime.UtcNow;
+
         var options = _optionsOverride ?? new ReportExportOptions
         {
             PreferredDirectories = BuildPreferredDirectories(),
@@ -51,10 +71,10 @@ public sealed class ReportExportService
             ShowClipboardFallback = ShowClipboardFallback,
         };
 
-        var result = _exporter.Export(_session, options);
-        if (result.Success && _session.CompletedAt is null)
+        var result = _exporter.Export(_session, options, _modules);
+        if (!result.Success)
         {
-            _session.CompletedAt = DateTime.UtcNow;
+            _session.CompletedAt = previous;
         }
 
         return result;
@@ -93,21 +113,27 @@ public sealed class ReportExportService
 
     private static bool ShowClipboardFallback(string json)
     {
+        bool copied;
         try
         {
             Clipboard.SetText(json);
+            copied = true;
         }
         catch
         {
-            // Even if the clipboard is unavailable, we still surface the modal below.
+            // The clipboard can be locked or otherwise unavailable; the operator must not
+            // be told the data is on the clipboard when it is not (roadmap C6).
+            copied = false;
         }
 
         MessageBox.Show(
-            "No writable location was found for the audit report.\nThe audit JSON has been copied to the clipboard — paste it into a file to preserve the record.",
+            copied
+                ? "No writable location was found for the audit report.\nThe audit JSON has been copied to the clipboard — paste it into a file to preserve the record."
+                : "The audit report could not be written to any location, and the clipboard was unavailable, so the data could not be preserved.",
             "Audit Report — Clipboard Fallback",
             MessageBoxButton.OK,
-            MessageBoxImage.Warning);
+            copied ? MessageBoxImage.Warning : MessageBoxImage.Error);
 
-        return true;
+        return copied;
     }
 }

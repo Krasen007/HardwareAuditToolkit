@@ -153,7 +153,9 @@ public sealed class TestOrchestrator : IDisposable
 
                     result.Status = TestStatus.Failed;
                     result.CompletedAt = _timeProvider.GetUtcNow().UtcDateTime;
-                    result.Findings.Add("Module.Start threw an exception; the module failed before it could begin.");
+
+                    // Internal diagnostic, phrased for the reader — no exception type.
+                    result.Findings.Add("The module failed to start; no results were recorded for it.");
                     UpdateOverallStatus();
                 }
 

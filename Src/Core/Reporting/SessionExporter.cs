@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace HardwareAuditToolkit.Core.Reporting;
 
 /// <summary>
@@ -15,8 +13,6 @@ namespace HardwareAuditToolkit.Core.Reporting;
 /// </summary>
 public sealed class SessionExporter
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     private readonly IReportTemplate _template;
 
     public SessionExporter() : this(new HtmlReportTemplate())
@@ -33,17 +29,22 @@ public sealed class SessionExporter
     /// <see cref="AuditSession.ReportPath"/> on the supplied session. The session object is
     /// otherwise not mutated (lifecycle completion is owned by the orchestrator). On the
     /// clipboard fallback path no file is written but <see cref="ReportExportResult.Success"/>
-    /// is still <c>true</c> because the data was preserved.
+    /// is still <c>true</c> because the data was preserved. The optional
+    /// <paramref name="modules"/> roster lets the report name modules that were never
+    /// started; when omitted the session's started modules are used.
     /// </summary>
-    public ReportExportResult Export(AuditSession session, ReportExportOptions options)
+    public ReportExportResult Export(AuditSession session, ReportExportOptions options, IEnumerable<ITestModule>? modules = null)
     {
         if (session is null)
             throw new ArgumentNullException(nameof(session));
         if (options is null)
             throw new ArgumentNullException(nameof(options));
 
-        string json = JsonSerializer.Serialize(session, JsonOptions);
-        string html = _template.Render(session);
+        // Build one deliberate report shape and feed it to both writers, so the JSON and
+        // HTML cannot drift and no raw enum/context-tag/exception-type leaks to the reader.
+        var model = ReportModelFactory.Build(session, modules);
+        string json = ReportJsonSerializer.Serialize(model);
+        string html = _template.Render(model);
         string baseName = BuildBaseName(session);
 
         foreach (var dir in options.PreferredDirectories ?? Array.Empty<string>())
@@ -168,7 +169,9 @@ public sealed class SessionExporter
             host = host.Replace(c, '_');
         }
 
-        DateTime stamp = session.StartedAt == default ? DateTime.UtcNow : session.StartedAt;
+        // Filename derives from export time, not start time, so a re-export after running
+        // more tests produces a new file instead of silently overwriting the earlier pair.
+        DateTime stamp = DateTime.UtcNow;
         return $"{host}_{stamp:yyyyMMddHHmmss}";
     }
 }

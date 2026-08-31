@@ -49,6 +49,10 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
     [ObservableProperty]
     private string _finalStatusText = string.Empty;
 
+    /// <summary>Operator-entered description of what is wrong, sent to <see cref="FlagDefect"/>.</summary>
+    [ObservableProperty]
+    private string _defectNote = string.Empty;
+
     [ObservableProperty]
     private string _progressText = "0 / 0 keys tested";
 
@@ -193,6 +197,7 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
 
         LogLines.Clear();
         ProgressText = $"0 / {_module.ExpectedCount} keys tested";
+        DefectNote = string.Empty;
         IsCompleted = false;
         FinalStatusText = string.Empty;
         StatusDetail = "Capturing… press each key once.";
@@ -213,7 +218,14 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
 
     [RelayCommand(CanExecute = nameof(CanFlag))]
     private void FlagDefect()
-        => _module.FlagDefect("Operator flagged a defective key.");
+        => _module.FlagDefect(NoteOrNull());
+
+    /// <summary>Trims the operator's defect note; null when blank (module supplies its default wording).</summary>
+    private string? NoteOrNull()
+    {
+        string trimmed = DefectNote.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
 
     private bool CanFlag => IsRunning;
 
@@ -226,6 +238,7 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         }
 
         _module.Reset();
+        DefectNote = string.Empty;
         foreach (var tile in Keys)
         {
             tile.State = KeyState.Untested;
