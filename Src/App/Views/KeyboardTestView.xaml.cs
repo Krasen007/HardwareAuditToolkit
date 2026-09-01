@@ -10,12 +10,13 @@ public partial class KeyboardTestView : UserControl
     {
         InitializeComponent();
 
-        // Auto-start policy (roadmap Phase 2.6, one policy for all five modules):
-        // every module whose run has a cost or a verdict — the four exclusive
-        // tests — starts ONLY when the operator presses Start. Auto-start hides
-        // "not run" from the operator and makes merely opening a screen look like
-        // an audit. System Info is the sole exception: it is a read-only snapshot
-        // with no verdict and no cost, so it collects when its screen opens.
-        // Deliberate: NO auto-start here (mirrors CpuStressView).
+        // Auto-start policy (owner decision, roadmap Phase 2.6): the keyboard, mouse
+        // and monitor screens START THEIR TEST ON LOAD — the operator opens a screen
+        // to test that device, and capture must be live immediately. Leaving is a
+        // non-event (StopModule in the view model's Dispose), so auto-start can never
+        // pollute the report. CPU Stress keeps an explicit Start (loading the machine
+        // the moment the screen opens is not acceptable), and System Info collects in
+        // its view-model constructor.
+        Loaded += (_, _) => (DataContext as KeyboardTestModuleViewModel)?.StartTestCommand.Execute(null);
     }
 }

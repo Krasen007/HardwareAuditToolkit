@@ -106,8 +106,8 @@ every other finding in the product.
 | Defect | Detail | Fix |
 |---|---|
 | ~~Exit from fullscreen records `Cancelled`~~ | ~~The operator's own complaint.~~ | Fixed — `ExitOverlay` hidden in `MonitorPatternWindow`; only "Back to controls" is visible |
-| ~~Auto-start on `Loaded`~~ | ~~Opening and leaving the control screen stamps `Cancelled`.~~ | Fixed (roadmap Phase 2.6) — no auto-start; explicit Start only |
-| ~~Start button dead after auto-start~~ | ~~`CanStart => !IsRunning && !IsCompleted`, and **Reset** is disabled while running, so there is no clean re-run path.~~ | Moot — no auto-start |
+| ~~Auto-start on `Loaded`~~ | ~~Opening and leaving the control screen stamps `Cancelled`.~~ | Decided (owner): auto-start on load is wanted; with the Phase 2 non-event stop, opening and leaving records nothing |
+| ~~Start button dead after auto-start~~ | ~~`CanStart => !IsRunning && !IsCompleted`, and **Reset** is disabled while running, so there is no clean re-run path.~~ | Moot — the original complaint is resolved by auto-start + non-event leave |
 | Brightness changes unrecorded | `ApplyBrightness` adds no finding or measurement. | C5 |
 | Declared capability unenforced | `RequiredCapabilities` is decorative. | A6-adjacent |
 | Doc/code mismatch | The view-model comment claims the control screen uses "the auto-hiding Exit overlay"; only the pattern window auto-hides. | C5 |

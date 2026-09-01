@@ -45,11 +45,10 @@ public sealed partial class SystemInfoModuleViewModel : ObservableObject, IDispo
         _orchestrator = orchestrator;
         _dispatcher = Application.Current.Dispatcher;
 
-        // Auto-start policy (roadmap Phase 2.6, one policy for all five modules):
-        // this is the ONE deliberate exception. System Info is a read-only
-        // inventory snapshot — no verdict, no operator time, no machine cost — so
-        // it collects when its screen opens. The four exclusive tests start only
-        // on explicit Start (see KeyboardTestView.xaml.cs for the full policy).
+        // Auto-start policy (owner decision): this module collects when its screen
+        // opens — a read-only inventory snapshot with no verdict and no cost. The
+        // keyboard/mouse/monitor screens also auto-start on load; only CPU Stress
+        // requires an explicit Start (see KeyboardTestView.xaml.cs).
         _orchestrator.TryStartModule("system", out _);
 
         LoadInventory();

@@ -12,9 +12,10 @@ with **78 xunit tests passing**.
 - **Phase 2 (done):** leaving is a non-event — `StopModule`/`StopAll` (non-recording)
   used by navigation disposal and window close; only Ctrl+E / Exit Test aborts and
   records `Cancelled`; CPU-stress Stop resolves `Passed` with the achieved duration
-  (`CpuStressModule.CompleteEarly`); one documented auto-start policy (explicit Start
-  for the four exclusive tests; System Info collects on screen open); unattended
-  timeout keeps `Cancelled` (documented in
+  (`CpuStressModule.CompleteEarly`); auto-start policy decided by the owner (later
+  reversal of the initial choice): keyboard/mouse/monitor/System Info start when
+  their screen opens, CPU Stress explicit Start only; unattended timeout keeps
+  `Cancelled` (documented in
   [`../reporting/status-vocabulary.md`](../reporting/status-vocabulary.md)).
 - **Phase 3 (done):** operator is authoritative everywhere — verified no path
   overrides/downgrades a Confirm/FlagDefect; coverage is a measurement in findings;

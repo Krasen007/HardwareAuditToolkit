@@ -18,12 +18,10 @@ public partial class MonitorTestView : UserControl
     {
         InitializeComponent();
 
-        // Auto-start policy (roadmap Phase 2.6, one policy for all five modules):
-        // every module whose run has a cost or a verdict — the four exclusive
-        // tests — starts ONLY when the operator presses Start. Auto-start here was
-        // actively harmful: opening the screen and leaving used to stamp the
-        // report. See KeyboardTestView.xaml.cs for the reasoning. Deliberate:
-        // NO auto-start.
+        // Auto-start policy (owner decision): keyboard, mouse and monitor start
+        // their test on load; leaving is a non-event so this can never stamp the
+        // report. See KeyboardTestView.xaml.cs for the reasoning.
+        Loaded += (_, _) => ViewModel?.StartTestCommand.Execute(null);
     }
 
     private MonitorTestModuleViewModel? ViewModel => DataContext as MonitorTestModuleViewModel;

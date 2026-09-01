@@ -120,24 +120,24 @@ Back button.
 would be disposed on first navigation away and never resubscribe. See
 [`../practices.md`](../practices.md).
 
-## Auto-start policy — decided (roadmap Phase 2.6, landed)
+## Auto-start policy — decided (owner decision, supersedes roadmap Phase 2.6)
 
-One policy for all five modules, documented in `KeyboardTestView.xaml.cs` (with
-pointers from the other views):
+The owner reversed the initial Phase 2.6 choice: **keyboard, mouse and monitor
+auto-start their test when the screen loads.** The operator opens a screen to test
+that device, and capture must be live immediately. This is safe under the Phase 2
+semantics: leaving is a non-event (`StopModule` in the view model's `Dispose`),
+so an auto-started test an operator walks away from records nothing.
 
 | Screen | Starts the module |
 |---|---|
-| Keyboard | **explicit Start only** |
-| Mouse | **explicit Start only** |
-| Monitor | **explicit Start only** |
-| System Info | in the view-model **constructor** (the one deliberate exception) |
-| CPU Stress | **explicit Start only** |
+| Keyboard | **on `Loaded`** |
+| Mouse | **on `Loaded`** |
+| Monitor | **on `Loaded`** |
+| System Info | in the view-model **constructor** |
+| CPU Stress | **only on explicit Start** (loading every core the moment the screen opens is not acceptable) |
 
-The rule: *any module whose run has a cost or a verdict starts only when the
-operator presses Start*; auto-start hides "not run" from the operator and makes
-merely opening a screen look like an audit. System Info is exempt because it is a
-read-only snapshot with no verdict, no operator time and no machine cost — and its
-snapshot feeds the session's `machineId`.
+The reasoning is documented in `KeyboardTestView.xaml.cs`, with pointers from the
+other view code-behinds.
 
 ## Single-instance activation
 

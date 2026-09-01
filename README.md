@@ -92,11 +92,15 @@ quits the application.
 
 | Module | Exclusive | Starts | Passes when |
 |---|---|---|---|
-| Keyboard | yes | explicit Start | operator confirms (coverage recorded as a finding, not a verdict) |
-| Mouse | yes | explicit Start | operator confirms (no coverage requirement) |
-| Monitor | yes | explicit Start | operator confirms patterns render correctly |
+| Keyboard | yes | on screen load | operator confirms (coverage recorded as a finding, not a verdict) |
+| Mouse | yes | on screen load | operator confirms (no coverage requirement) |
+| Monitor | yes | on screen load | operator confirms patterns render correctly |
 | System Info | no | on screen open | WMI inventory collected |
 | CPU Stress | yes | **explicit Start** | the full target duration elapses (300s cap); a deliberate early Stop also records `Passed` with the achieved duration |
+
+Auto-start is the owner's decision: opening one of the three device screens
+begins the test immediately, and because leaving a screen is a non-event, an
+auto-started test an operator walks away from records nothing.
 
 Perceptual checks record the operator's confirmation as the status, by design —
 there is no objective pass criterion for monitor uniformity or key feel. Coverage

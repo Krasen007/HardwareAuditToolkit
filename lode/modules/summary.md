@@ -49,9 +49,9 @@ are separate — see [`../reporting/status-vocabulary.md`](../reporting/status-v
 
 | Id | Display name | Exclusive | Max duration | Starts | Passes when | Lode |
 |---|---|---|---|---|---|---|
-| `keyboard` | Keyboard Test | yes | 30 min | **explicit Start** | confirm (coverage recorded as a finding) | [keyboard](keyboard.md) |
-| `mouse` | Mouse Test | yes | 30 min | **explicit Start** | confirm (no coverage floor) | [mouse](mouse.md) |
-| `monitor` | Monitor Test | yes | 30 min | **explicit Start** | confirm patterns render correctly | [monitor](monitor.md) |
+| `keyboard` | Keyboard Test | yes | 30 min | on `Loaded` | confirm (coverage recorded as a finding) | [keyboard](keyboard.md) |
+| `mouse` | Mouse Test | yes | 30 min | on `Loaded` | confirm (no coverage floor) | [mouse](mouse.md) |
+| `monitor` | Monitor Test | yes | 30 min | on `Loaded` | confirm patterns render correctly | [monitor](monitor.md) |
 | `system` | System Info | **no** | — | in the VM **constructor** | inventory collected | [system-info](system-info.md) |
 | `stress` | CPU Stress Test | yes | 310s | **explicit Start** | full duration, or a deliberate early Stop (`Passed` + achieved duration) | [cpu-stress](cpu-stress.md) |
 
@@ -90,7 +90,7 @@ status = TestStatus.Passed;   // operator confirmed; coverage is a finding, not 
 |---|---|
 | Two sub-screens measure the operator, not the hardware | WPM typing test and duck tracing. Neither affects any status; both leave raw capture running so they pollute coverage and counters. Roadmap A1/A2 — **owner-deferred** |
 | Operator defect note | Each screen has a "What's wrong?" field bound to `FlagDefect(note)`; blank notes fall back to the module's default wording. Cleared on Start/Reset. |
-| ~~Auto-start policy differs per module~~ | ~~Decided per implementation phase.~~ Resolved (roadmap Phase 2.6): explicit Start for the four exclusive tests; System Info collects on screen open; the rule is documented in `KeyboardTestView.xaml.cs` and `exit-and-navigation.md`. |
+| ~~Auto-start policy differs per module~~ | ~~Decided per implementation phase.~~ Decided (owner): keyboard/mouse/monitor/System Info start when their screen opens; only CPU Stress requires explicit Start. Documented in `KeyboardTestView.xaml.cs` and `exit-and-navigation.md`. Safe because leaving is a non-event. |
 | Keyboard has no device-loss handling | The mouse module subscribes to `DeviceTopologyChangedMessage` and records an honest disconnect finding; the keyboard does not, so an unplugged keyboard mid-test is unrecorded |
 | Engineering vocabulary in findings | `BelowNormal`, `"(graceful)"`, `"sub-screen"`, `"duck"`, exception type names. Roadmap C5 |
 
