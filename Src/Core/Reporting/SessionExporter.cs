@@ -40,18 +40,28 @@ public sealed class SessionExporter
         if (options is null)
             throw new ArgumentNullException(nameof(options));
 
-        // Build one deliberate report shape and feed it to both writers, so the JSON and
-        // HTML cannot drift and no raw enum/context-tag/exception-type leaks to the reader.
-        var model = ReportModelFactory.Build(session, modules);
-        string json = ReportJsonSerializer.Serialize(model);
-        string html = _template.Render(model);
         string baseName = BuildBaseName(session);
+        string? json = ReportJsonSerializer.Serialize(ReportModelFactory.Build(session, modules));
 
         foreach (var dir in options.PreferredDirectories ?? Array.Empty<string>())
         {
-            if (TryWritePair(dir, baseName, json, html, out var jsonPath, out var htmlPath))
+            if (!TryResolvePaths(dir, baseName, out var jsonPath, out var htmlPath))
             {
-                return Succeed(session, jsonPath!, htmlPath!, "Audit report saved.");
+                continue;
+            }
+
+            session.JsonPath = jsonPath;
+            session.ReportPath = htmlPath;
+
+            // Build one deliberate report shape and feed it to both writers, so the JSON and
+            // HTML cannot drift and no raw enum/context-tag/exception-type leaks to the reader.
+            var model = ReportModelFactory.Build(session, modules);
+            json = ReportJsonSerializer.Serialize(model);
+            string html = _template.Render(model);
+
+            if (TryWritePair(dir, baseName, json, html, out var writtenJsonPath, out var writtenHtmlPath))
+            {
+                return Succeed(session, writtenJsonPath!, writtenHtmlPath!, "Audit report saved.");
             }
         }
 
@@ -60,14 +70,24 @@ public sealed class SessionExporter
         if (options.RequestManualFolder is { } picker)
         {
             var dir = picker();
-            if (dir is not null && TryWritePair(dir, baseName, json, html, out var jsonPath, out var htmlPath))
+            if (dir is not null && TryResolvePaths(dir, baseName, out var jsonPath, out var htmlPath))
             {
-                return Succeed(session, jsonPath!, htmlPath!, "Audit report saved to the chosen folder.");
+                session.JsonPath = jsonPath;
+                session.ReportPath = htmlPath;
+
+                var model = ReportModelFactory.Build(session, modules);
+                json = ReportJsonSerializer.Serialize(model);
+                string html = _template.Render(model);
+
+                if (TryWritePair(dir, baseName, json, html, out var writtenJsonPath, out var writtenHtmlPath))
+                {
+                    return Succeed(session, writtenJsonPath!, writtenHtmlPath!, "Audit report saved to the chosen folder.");
+                }
             }
         }
 
         // Step 5 (§9.6): last resort — copy JSON to clipboard so the audit is never lost.
-        if (options.ShowClipboardFallback is { } clipboard && clipboard(json))
+        if (options.ShowClipboardFallback is { } clipboard && !string.IsNullOrEmpty(json) && clipboard(json))
         {
             return new ReportExportResult
             {
@@ -84,6 +104,30 @@ public sealed class SessionExporter
             FailureReason = ExportFailureReason.NoWritableLocation,
             Message = "The audit report could not be written to any location.",
         };
+    }
+
+    private static bool TryResolvePaths(string? directory, string baseName, out string? jsonPath, out string? htmlPath)
+    {
+        jsonPath = null;
+        htmlPath = null;
+
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return false;
+        }
+
+        try
+        {
+            string resolved = directory!;
+            Directory.CreateDirectory(resolved);
+            jsonPath = Path.Combine(resolved, baseName + ".json");
+            htmlPath = Path.Combine(resolved, baseName + ".html");
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -171,7 +215,9 @@ public sealed class SessionExporter
 
         // Filename derives from export time, not start time, so a re-export after running
         // more tests produces a new file instead of silently overwriting the earlier pair.
+        // Include a per-attempt suffix so concurrent exports for the same host within the
+        // same second cannot reuse the same pair of filenames.
         DateTime stamp = DateTime.UtcNow;
-        return $"{host}_{stamp:yyyyMMddHHmmss}";
+        return $"{host}_{stamp:yyyyMMddHHmmss}_{Guid.NewGuid():N}";
     }
 }

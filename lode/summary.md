@@ -7,8 +7,8 @@ will read later. It requires no installer, no elevation, no database and no
 network. Five test modules (`keyboard`, `mouse`, `monitor`, `system`, `stress`)
 implement a common `ITestModule` contract, are discovered through DI, and are
 coordinated by a single `TestOrchestrator` that enforces one-exclusive-module-at-a-time
-and records a `TestStatus` per run into an `AuditSession`. The build is clean
-(zero warnings) with **78 xunit tests passing**. Roadmap Phases 1–4 have landed:
+and records a `TestStatus` per run into an `AuditSession`. The solution now builds
+cleanly and the xUnit suite is green with **79 tests passing**. Roadmap Phases 1–4 have landed:
 no checkpoint store, **leaving a test is a non-event** (only Ctrl+E / Exit Test
 aborts and records `Cancelled`; CPU-stress Stop records `Passed` with the achieved
 duration), **the operator is authoritative** (coverage is a measurement, never a
@@ -55,6 +55,15 @@ graph TD
   No UI, no directly-authored P/Invoke.
 - **Infrastructure** owns every Win32/WMI/sensor call, always behind an interface,
   always best-effort.
+
+## Current reporting invariants
+
+The export cascade is resilient: invalid preferred folders are treated as
+non-fatal, the exporter falls back to the next valid location or clipboard, and
+the JSON payload is generated once per export attempt before the file-write
+decision. The write flow keeps the JSON and HTML pair aligned for the same
+resolved export target instead of letting a later path selection drift from the
+serialized model.
 
 ## Where to start reading
 

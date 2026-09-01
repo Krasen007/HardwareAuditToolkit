@@ -21,14 +21,32 @@ public sealed partial class ExportResultDialog : Window
 
     public bool HasFile { get; }
 
-    public ExportResultDialog(string? jsonPath, string? htmlPath)
+    public bool ShowStatusMessage { get; }
+
+    public string StatusMessage { get; }
+
+    public ExportResultDialog(ReportExportResult result)
     {
         Application.LoadComponent(this, new Uri("/Views/ExportResultDialog.xaml", UriKind.Relative));
 
-        ReportPath = htmlPath ?? jsonPath ?? "(saved to clipboard)";
-        JsonPath = jsonPath ?? "(not saved)";
-        HasFile = (htmlPath is not null && File.Exists(htmlPath)) ||
-                  (jsonPath is not null && File.Exists(jsonPath));
+        var htmlPath = result.HtmlPath;
+        var jsonPath = result.JsonPath;
+        var hasFile = (htmlPath is not null && File.Exists(htmlPath)) ||
+                      (jsonPath is not null && File.Exists(jsonPath));
+        var clipboardFallback = result.Success && result.JsonContent is not null && !hasFile;
+
+        ReportPath = result.Success
+            ? (htmlPath ?? jsonPath ?? (clipboardFallback ? "(saved to clipboard)" : "(not saved)"))
+            : (result.Message ?? "The audit report could not be written to any location.");
+        JsonPath = result.Success
+            ? (jsonPath ?? (clipboardFallback ? "(saved to clipboard)" : "(not saved)"))
+            : (result.Message ?? "The audit report could not be written to any location.");
+        HasFile = hasFile;
+        ShowStatusMessage = !hasFile && (!result.Success || clipboardFallback);
+        StatusMessage = clipboardFallback
+            ? "No file was written — the audit JSON is on the clipboard."
+            : (result.Message ?? "The audit report could not be written to any location.");
+
         _htmlPath = htmlPath;
         _jsonPath = jsonPath;
         DataContext = this;
@@ -90,7 +108,7 @@ public sealed partial class ExportResultDialog : Window
     /// <summary>Shows the result dialog owned by the main window.</summary>
     public static void ShowResult(ReportExportResult result)
     {
-        var dialog = new ExportResultDialog(result.JsonPath, result.HtmlPath);
+        var dialog = new ExportResultDialog(result);
         if (Application.Current?.MainWindow is Window owner)
         {
             dialog.Owner = owner;

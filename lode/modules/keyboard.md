@@ -75,9 +75,10 @@ Ctrl+E or Exit Test to leave. Confirm when done."*
 - 104-key grid, tiles coloured by state via `KeyStateToBrushConverter`.
 - Per-key repeat badge (press count, shown when > 1).
 - Progress text `"N / 104 keys tested"`.
-- **Pinned, newest-first key-press log** at the bottom, capped at 500 lines.
-  Deliberately pinned rather than a scrollable page section, mirroring the mouse
-  test.
+- **Pinned, newest-first key-press log** at the bottom, capped at 500 lines and
+    rendered inside a fixed 80px viewport. Deliberately pinned rather than a
+    scrollable page section, mirroring the mouse test; the fixed row prevents the
+    growing `ItemsControl` measurement from taking space away from the key grid.
 - Buttons: Start test, Confirm all keys work, Flag defective key, Reset,
   Back to dashboard, and the WPM toggle.
 

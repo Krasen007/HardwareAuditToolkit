@@ -68,7 +68,6 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
                 try
                 {
                     var snapshot = _provider.GetSnapshot();
-                    _lastSnapshot = snapshot;
                     Action<TestStatus>? cb;
                     lock (_gate)
                     {
@@ -79,6 +78,7 @@ public sealed class SystemInfoModule(SystemInfoProvider provider) : ITestModule
 
                         CurrentPhase = ModulePhase.Running;
                         Populate(snapshot);
+                        _lastSnapshot = snapshot;
                         CurrentPhase = ModulePhase.Complete;
                         cb = _onComplete;
                         _onComplete = null;

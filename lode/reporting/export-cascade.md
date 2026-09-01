@@ -4,7 +4,9 @@ Architecture §9.6. **A failure partway down the cascade delays the export; it n
 loses the audit.** The session stays in memory until a write actually succeeds.
 
 `Core/Reporting/SessionExporter.cs` (pure) + `App/Services/ReportExportService.cs`
-(Windows interactions).
+(Windows interactions). The current export flow treats invalid directories as a
+probe failure, not an exception, and keeps the same serialized JSON payload for
+any clipboard fallback or eventual file write.
 
 ## The five steps
 
@@ -42,8 +44,10 @@ File.WriteAllText(jsonPath, json);
 File.WriteAllText(htmlPath, html);
 ```
 
-On any failure, partial files are deleted and the cascade moves on. Apply this shape
-to any new durable write.
+On any failure, partial files are deleted and the cascade moves on. Invalid
+preferred directories are now filtered out by `TryResolvePaths()` instead of
+throwing, so the cascade continues to the manual picker or clipboard path without
+crashing the app. Apply this shape to any new durable write.
 
 ## The Core/App seam
 

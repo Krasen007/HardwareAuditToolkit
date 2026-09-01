@@ -1,4 +1,7 @@
+using System.Reflection;
 using HardwareAuditToolkit.Core;
+using HardwareAuditToolkit.Core.Modules;
+using HardwareAuditToolkit.Infrastructure;
 using Xunit;
 
 namespace HardwareAuditToolkit.Tests;
@@ -263,6 +266,28 @@ public class TestOrchestratorTests
         Assert.Empty(session.Modules);
         Assert.Equal(TestStatus.NotRun, session.OverallStatus);
         Assert.Empty(orchestrator.RunningModules);
+    }
+
+    [Fact]
+    public void StopModule_DoesNotPropagateSystemInfoMachineId_WhenRunNeverCompleted()
+    {
+        var session = new AuditSession();
+        var provider = new SystemInfoProvider();
+        var system = new SystemInfoModule(provider);
+        using var orchestrator = new TestOrchestrator(session, [system]);
+
+        typeof(SystemInfoProvider)
+            .GetField("_cached", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(provider, new SystemInfoSnapshot { MachineId = "machine-stop-race" });
+
+        Assert.True(orchestrator.TryStartModule("system", out _));
+
+        // The provider has a cached snapshot, so the old bug would assign _lastSnapshot
+        // before the generation check and then propagate MachineId on cancellation.
+        Assert.True(orchestrator.StopModule("system"));
+        Assert.Empty(session.Modules);
+        Assert.Equal(TestStatus.NotRun, session.OverallStatus);
+        Assert.Null(session.MachineId);
     }
 
     [Fact]

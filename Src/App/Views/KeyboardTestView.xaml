@@ -38,10 +38,10 @@
             <Grid Grid.Row="1" Margin="0,12,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="80" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0">
+                <Grid Grid.Row="0">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                                   Visibility="{Binding IsWpmMode, Converter={StaticResource InverseBoolToVis}}">
                         <ItemsControl ItemsSource="{Binding Keys}">
@@ -109,10 +109,10 @@
                                Foreground="#9AE6B0" Margin="0,12,0,0" />
                 </StackPanel>
             </ScrollViewer>
-                </StackPanel>
+                </Grid>
 
                 <!-- Pinned, non-scrolling newest-first key-press log (mirrors the mouse test's log). -->
-                <Border Grid.Row="1" Margin="0,8,0,0" Padding="10" CornerRadius="8" MaxHeight="110"
+                <Border Grid.Row="1" Margin="0,8,0,0" Padding="10" CornerRadius="8"
                         Background="#252526" BorderBrush="#3F3F46" BorderThickness="1">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Text="Latest key presses"

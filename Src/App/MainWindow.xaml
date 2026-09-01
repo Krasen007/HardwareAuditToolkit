@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="Hardware Audit Toolkit"
         Icon="pack://application:,,,/Assets/appicon.ico"
-        Height="640" Width="1300"
+        Height="760" MinHeight="720" Width="1300"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <!-- ViewModel-first navigation: the content region renders the current screen. -->
