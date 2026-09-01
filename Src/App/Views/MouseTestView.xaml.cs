@@ -17,7 +17,11 @@ namespace HardwareAuditToolkit.App.Views
         public MouseTestView()
         {
             InitializeComponent();
-            Loaded += (_, _) => ViewModel?.StartTestCommand.Execute(null);
+
+            // Auto-start policy (roadmap Phase 2.6, one policy for all five
+            // modules): every module whose run has a cost or a verdict — the four
+            // exclusive tests — starts ONLY when the operator presses Start. See
+            // KeyboardTestView.xaml.cs for the reasoning. Deliberate: NO auto-start.
         }
 
         private MouseTestModuleViewModel? ViewModel => DataContext as MouseTestModuleViewModel;

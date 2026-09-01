@@ -49,34 +49,28 @@ are separate — see [`../reporting/status-vocabulary.md`](../reporting/status-v
 
 | Id | Display name | Exclusive | Max duration | Starts | Passes when | Lode |
 |---|---|---|---|---|---|---|
-| `keyboard` | Keyboard Test | yes | 30 min | on `Loaded` | confirm **and** all 104 keys pressed | [keyboard](keyboard.md) |
-| `mouse` | Mouse Test | yes | 30 min | on `Loaded` | confirm (no coverage floor) | [mouse](mouse.md) |
-| `monitor` | Monitor Test | yes | 30 min | on `Loaded` | confirm patterns render correctly | [monitor](monitor.md) |
+| `keyboard` | Keyboard Test | yes | 30 min | **explicit Start** | confirm (coverage recorded as a finding) | [keyboard](keyboard.md) |
+| `mouse` | Mouse Test | yes | 30 min | **explicit Start** | confirm (no coverage floor) | [mouse](mouse.md) |
+| `monitor` | Monitor Test | yes | 30 min | **explicit Start** | confirm patterns render correctly | [monitor](monitor.md) |
 | `system` | System Info | **no** | — | in the VM **constructor** | inventory collected | [system-info](system-info.md) |
-| `stress` | CPU Stress Test | yes | 310s | **explicit Start** | full target duration elapsed | [cpu-stress](cpu-stress.md) |
+| `stress` | CPU Stress Test | yes | 310s | **explicit Start** | full duration, or a deliberate early Stop (`Passed` + achieved duration) | [cpu-stress](cpu-stress.md) |
 
 `system` is the only non-exclusive module, so an inventory snapshot may overlap a
 running keyboard test.
 
-## Two trust models in one product
+## One trust model everywhere (resolved, roadmap Phase 3 — landed)
 
-This is the central incoherence, and the operator has already complained about it
-([`../../todo.md`](../../todo.md) item 1).
+Decision D2 landed: **the operator is authoritative in every module.** Confirm
+resolves `Passed` regardless of coverage; missing coverage (keyboard keys not
+pressed, mouse with zero clicks) is recorded as a **measurement in the findings**,
+never as a `Warning` or a verdict word. `FlagDefect(note)` with the operator's text
+resolves `Failed` and the note reaches the report. Tests
+(`Module_ZeroEvidenceConfirm_*`, `Module_FlagDefectNote_*`) lock this in.
 
 ```csharp
-// keyboard: coverage overrides the operator
-if (missing.Count == 0) { status = TestStatus.Passed; }
-else { status = TestStatus.Warning; }        // operator said OK; tool disagrees
-
-// mouse: the operator is unconditionally right
-cb = StopInternal(TestStatus.Passed, "Passed — operator confirmed all mouse functions work.");
-// zero clicks, zero scrolls, zero drags still Passes
+// keyboard and mouse, same model now:
+status = TestStatus.Passed;   // operator confirmed; coverage is a finding, not a verdict
 ```
-
-Keyboard coverage is the **only** objective pass criterion in the whole product.
-Everything else is a perceptual check where architecture §5 says the operator's
-confirmation *is* the status. One answer must apply to both — open decision
-[D2](../plans/open-decisions.md).
 
 ## Patterns shared by all five
 
@@ -94,22 +88,24 @@ confirmation *is* the status. One answer must apply to both — open decision
 
 | Defect | Detail |
 |---|---|
-| Two sub-screens measure the operator, not the hardware | WPM typing test and duck tracing. Neither affects any status; both leave raw capture running so they pollute coverage and counters. Roadmap A1/A2 |
+| Two sub-screens measure the operator, not the hardware | WPM typing test and duck tracing. Neither affects any status; both leave raw capture running so they pollute coverage and counters. Roadmap A1/A2 — **owner-deferred** |
 | Operator defect note | Each screen has a "What's wrong?" field bound to `FlagDefect(note)`; blank notes fall back to the module's default wording. Cleared on Start/Reset. |
-| Auto-start policy differs per module | Decided per implementation phase rather than as one decision. Only CPU stress documents its choice. Roadmap B3 |
+| ~~Auto-start policy differs per module~~ | ~~Decided per implementation phase.~~ Resolved (roadmap Phase 2.6): explicit Start for the four exclusive tests; System Info collects on screen open; the rule is documented in `KeyboardTestView.xaml.cs` and `exit-and-navigation.md`. |
 | Keyboard has no device-loss handling | The mouse module subscribes to `DeviceTopologyChangedMessage` and records an honest disconnect finding; the keyboard does not, so an unplugged keyboard mid-test is unrecorded |
 | Engineering vocabulary in findings | `BelowNormal`, `"(graceful)"`, `"sub-screen"`, `"duck"`, exception type names. Roadmap C5 |
 
 ## Adding a module
 
-Four places must change today (roadmap E1 exists to reduce this to one):
+Today (after roadmap E1 landed):
 
 1. The `ITestModule` implementation in `Core/Modules/`.
 2. Two DI registrations in `App.ConfigureServices` — concrete singleton **and**
    `ITestModule` factory pointing at the same instance.
-3. `DashboardViewModel.Modules` (hardcoded) and `NavigationService.NavigateToModule`
-   (string switch).
+3. The module's view model (transient) + one entry in the `ModuleScreenRegistry`
+   (also in `App.ConfigureServices`) — the single routing table; the dashboard
+   cards generate themselves from `IModuleMetadata`, no dashboard edit needed.
 4. A `DataTemplate` in `MainWindow.xaml` mapping the view model to its view.
+   Back/Export/Exit come from the persistent window header for free.
 
 Then add tests mirroring `Phase2ModuleTests.cs`: compose via DI, drive a fake,
 assert the terminal status.

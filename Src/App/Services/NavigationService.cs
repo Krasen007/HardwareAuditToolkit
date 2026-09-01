@@ -3,28 +3,22 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HardwareAuditToolkit.App.Services;
 
-public sealed class NavigationService(ShellViewModel shell, IServiceProvider services) : INavigationService
+/// <summary>
+/// View-model-first navigation over the <see cref="ModuleScreenRegistry"/> (roadmap
+/// E1): module ids route through one table built in the DI composition root instead
+/// of a hardcoded switch.
+/// </summary>
+public sealed class NavigationService(ShellViewModel shell, IServiceProvider services, ModuleScreenRegistry screens) : INavigationService
 {
     private readonly ShellViewModel _shell = shell;
     private readonly IServiceProvider _services = services;
+    private readonly ModuleScreenRegistry _screens = screens;
 
     public void NavigateToDashboard()
         => SetScreen(_services.GetRequiredService<DashboardViewModel>());
 
     public void NavigateToModule(string moduleId)
-    {
-        object screen = moduleId switch
-        {
-            "system" => _services.GetRequiredService<SystemInfoModuleViewModel>(),
-            "stress" => _services.GetRequiredService<CpuStressModuleViewModel>(),
-            "keyboard" => _services.GetRequiredService<KeyboardTestModuleViewModel>(),
-            "mouse" => _services.GetRequiredService<MouseTestModuleViewModel>(),
-            "monitor" => _services.GetRequiredService<MonitorTestModuleViewModel>(),
-            _ => throw new ArgumentException($"Unknown module id '{moduleId}'.", nameof(moduleId)),
-        };
-
-        SetScreen(screen);
-    }
+        => SetScreen(_screens.Resolve(moduleId, _services));
 
     /// <summary>
     /// Swaps the current screen, disposing the outgoing view model (e.g. to
@@ -39,5 +33,6 @@ public sealed class NavigationService(ShellViewModel shell, IServiceProvider ser
         }
 
         _shell.CurrentScreen = screen;
+        _shell.IsDashboard = screen is DashboardViewModel;
     }
 }

@@ -8,11 +8,14 @@ network. Five test modules (`keyboard`, `mouse`, `monitor`, `system`, `stress`)
 implement a common `ITestModule` contract, are discovered through DI, and are
 coordinated by a single `TestOrchestrator` that enforces one-exclusive-module-at-a-time
 and records a `TestStatus` per run into an `AuditSession`. The build is clean
-(zero warnings) with **68 xunit tests passing**. All feature work described in the
-architecture document is implemented; the outstanding work is not new features but
-**correcting the report layer, the status vocabulary and the exit semantics**, all
-catalogued in [`../taste-audit.md`](../taste-audit.md) and planned in
-[`plans/roadmap.md`](plans/roadmap.md).
+(zero warnings) with **78 xunit tests passing**. Roadmap Phases 1–4 have landed:
+no checkpoint store, **leaving a test is a non-event** (only Ctrl+E / Exit Test
+aborts and records `Cancelled`; CPU-stress Stop records `Passed` with the achieved
+duration), **the operator is authoritative** (coverage is a measurement, never a
+verdict), and the coherence cleanup is done (metadata-driven dashboard +
+`ModuleScreenRegistry`, persistent Back/Export/Exit header, per-module status on
+dashboard cards, `schemaVersion: 1` in the JSON). Remaining work is the manual
+Phase 5 pre-ship checklist and the owner-deferred v2 list.
 
 ## The two principles that actually hold
 

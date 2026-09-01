@@ -8,8 +8,10 @@ start/cancel, exclusivity, timeouts, and the recording of every result into
 
 ```csharp
 bool TryStartModule(string moduleId, out string reason);  // false + reason, never throws
-bool CancelModule(string moduleId);                       // false when not running
-void CancelAll();
+bool CancelModule(string moduleId);                       // ABORT: records Cancelled; false when not running
+bool StopModule(string moduleId);                         // NON-EVENT: records nothing; false when not running
+void CancelAll();                                          // abort everything, records Cancelled
+void StopAll();                                            // stop everything, records nothing (shutdown)
 IReadOnlyList<ITestModule> Modules { get; }
 ITestModule? CurrentExclusiveModule { get; }
 ```
@@ -42,6 +44,7 @@ stateDiagram-v2
     Running --> Failed: module callback / Start threw
     Running --> Warning: module callback
     Running --> Cancelled: CancelModule / CancelAll / MaxDuration
+    Running --> NotRun: StopModule / StopAll (result REMOVED)
     Passed --> [*]
     Failed --> [*]
     Warning --> [*]
@@ -53,6 +56,16 @@ appends a second record rather than replacing the first —
 `RestartAfterCompletion_CreatesSecondResultRecord` guards this. Consequence worth
 knowing: visiting the System Info screen three times produces three identical
 sections in the report with no run number to tell them apart.
+
+**The non-event paths (roadmap Phase 2, decision D1 — landed).**
+`StopModule`/`StopAll` call the module's `Cancel()` (so OS resources are always
+released), then **remove the result record from the session** — including the
+`Cancelled` record a synchronously-completing `Cancel()` already wrote. Leaving a
+test or closing the app therefore writes nothing; the module reads as `Not run`.
+Use `CancelModule`/`CancelAll` **only** for the deliberate abort
+(`ExitRequestedMessage`). The unattended `MaxDuration` timeout deliberately keeps
+`Cancelled` — a timeout is an abort (documented in
+[`../reporting/status-vocabulary.md`](../reporting/status-vocabulary.md)).
 
 A result is created with `Status = Running` and `CompletedAt = null`, then updated
 **in place** on completion:

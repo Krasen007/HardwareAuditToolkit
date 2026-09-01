@@ -63,6 +63,7 @@ public static class ReportModelFactory
         var counts = Count(results);
         return new ReportModel
         {
+            SchemaVersion = 1,
             Hostname = session.Hostname,
             SessionId = session.SessionId,
             StartedAt = session.StartedAt,

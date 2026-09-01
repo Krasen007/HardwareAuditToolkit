@@ -114,14 +114,14 @@ report DTO — so the two artifacts differ in ways nobody chose:
 
 | | JSON | HTML |
 |---|---|---|
+| `schemaVersion` | `1` (roadmap E4 — bump on any breaking shape change) | n/a |
 | `moduleId` | present | omitted |
 | `machineId` | emitted as `null` | omitted |
-| Empty session | `"modules": []` | prose: "No modules were run in this session." |
+| Empty session | prose-status entries for the full roster | prose: "No modules were run in this session." |
 | Timestamps | ISO round-trip | `"u"` format, UTC only |
-| Schema marker | **none** | n/a |
 
-Roadmap C3 introduces a shared report DTO so both writers render one deliberate
-shape; roadmap E4 adds `schemaVersion`.
+Roadmap C3 introduced the shared report DTO so both writers render one deliberate
+shape; E4 added `schemaVersion` as the first JSON field.
 
 ## Rules
 

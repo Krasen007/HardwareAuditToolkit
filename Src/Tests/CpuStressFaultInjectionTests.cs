@@ -38,6 +38,30 @@ public class CpuStressFaultInjectionTests
         Assert.Contains(module.Findings, f => f.StartsWith("Burn-in worker failed"));
     }
 
+    [Fact]
+    public void CompleteEarly_ResolvesToPassed_AndRecordsAchievedDuration()
+    {
+        // Roadmap Phase 2.4: the operator's Stop button ends a deliberate, shortened
+        // burn-in. It is the intended end of the test — it must read as Passed with
+        // the achieved duration, never as Cancelled.
+        var module = new CpuStressModule(new FakeSensorProvider());
+
+        var completed = new ManualResetEventSlim(false);
+        TestStatus? finalStatus = null;
+        module.Start(status =>
+        {
+            finalStatus = status;
+            completed.Set();
+        });
+
+        module.CompleteEarly();
+
+        Assert.True(completed.Wait(TimeSpan.FromSeconds(15)), "early-stop completion never fired");
+        Assert.Equal(TestStatus.Passed, finalStatus);
+        Assert.False(module.IsRunning);
+        Assert.Contains(module.Findings, f => f.StartsWith("Burn-in stopped by the operator after"));
+    }
+
     private sealed class FakeSensorProvider : ISensorProvider
     {
         public void Start() { }

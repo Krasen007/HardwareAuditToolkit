@@ -113,6 +113,38 @@ public class KeyboardModuleTests
     }
 
     [Fact]
+    public void Module_ZeroEvidenceConfirm_PassedWithMeasurement()
+    {
+        // Roadmap Phase 3 (decision D2): the operator is authoritative. Confirming
+        // without pressing a single key still resolves Passed; the missing coverage
+        // is recorded as a finding, never as a Warning or a verdict.
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+
+        module.Confirm();
+
+        var result = GetSessionResult(orchestrator);
+        Assert.Equal(TestStatus.Passed, result.Status);
+        Assert.Equal(0, module.PressedCount);
+        Assert.Contains(result.Findings, f => (f ?? string.Empty).Contains("never pressed", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Module_FlagDefectNote_ReachesTheRecord()
+    {
+        // Roadmap Phase 3: the operator's defect text, not a generic constant.
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+
+        module.FlagDefect("Spacebar repeats without being held.");
+
+        var result = GetSessionResult(orchestrator);
+        Assert.Equal(TestStatus.Failed, result.Status);
+        Assert.Contains("Spacebar repeats without being held.", result.Findings);
+        Assert.True(fake.Stopped);
+    }
+
+    [Fact]
     public void Module_Cancel_CancelledAndStopsCapture()
     {
         var module = BuildModule(out var fake, out var orchestrator);

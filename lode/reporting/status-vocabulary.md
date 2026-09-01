@@ -24,25 +24,23 @@ capability that genuinely can be absent — deliberately resolves to `Passed` be
 the monitor passes on visual confirmation. The honest-unavailable state lives as
 prose in a finding, never as a status.
 
-## `Cancelled` means five unrelated things
+## `Cancelled` now means two things (narrowed, roadmap Phase 2 — landed)
 
 ```mermaid
 graph TD
-    A[Operator navigated away<br/>VM Dispose → CancelModule] --> Z[Cancelled]
-    B[Ctrl+E / Exit overlay<br/>→ CancelAll] --> Z
-    C[Window closed<br/>→ CancelAll] --> Z
+    A[Operator navigated away<br/>VM Dispose → StopModule] --> NONE[nothing recorded - module reads NotRun]
+    B[Ctrl+E / header Exit Test<br/>→ CancelAll] --> Z[Cancelled]
+    C[Window closed<br/>→ StopAll] --> NONE
     D[MaxDuration timeout<br/>→ force cancel] --> Z
-    E[CPU Stress: Stop button<br/>the intended end of a burn-in] --> Z
+    E[CPU Stress Stop button<br/>→ CompleteEarly] --> P[Passed + achieved-duration finding]
 ```
 
-Three of these five share the identical finding `"Cancelled by operator."` Only the
-timeout is distinguishable, and only by prose.
-
-The worst case is **E**: pressing **Stop** on the CPU stress test is a normal,
-intended action, and a deliberate 30-second smoke test is recorded exactly like an
-abandoned run.
-
-Open decision [D1](../plans/open-decisions.md) settles this.
+Decision D1 landed as: leaving and closing are non-events; only a deliberate
+abort (Ctrl+E / Exit Test) records `Cancelled`; the burn-in Stop button resolves
+`Passed` with a finding such as `"Burn-in stopped by the operator after 0:30 of
+the 5:00 target."` The unattended timeout was **decided to be an abort** — it
+keeps `Cancelled` with the reason `"Module exceeded its maximum duration of …
+and was force-cancelled."`
 
 ## `Warning` and `Failed` are each two things
 

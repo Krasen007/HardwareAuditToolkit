@@ -310,11 +310,9 @@ public sealed partial class KeyboardTestModuleViewModel : ObservableObject, IDis
         WeakReferenceMessenger.Default.Unregister<KeyEventMessage>(this);
         WeakReferenceMessenger.Default.Unregister<KeyboardTestStatusMessage>(this);
 
-        // Leaving the screen must stop capture so no raw-input registration leaks
-        // (architecture Phase 7 cleanup, started in Phase 3).
-        if (_orchestrator.RunningModules.Any(m => m.ModuleId == "keyboard"))
-        {
-            _orchestrator.CancelModule("keyboard");
-        }
+        // Leaving the screen is a non-event (roadmap Phase 2, decision D1): stop
+        // capture so no raw-input registration leaks, but record nothing — the
+        // operator decided not to do this test now. Only Ctrl+E / Exit Test aborts.
+        _orchestrator.StopModule("keyboard");
     }
 }

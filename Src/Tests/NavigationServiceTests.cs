@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using HardwareAuditToolkit.App.Services;
 using HardwareAuditToolkit.App.ViewModels;
@@ -9,9 +10,10 @@ namespace HardwareAuditToolkit.Tests;
 
 /// <summary>
 /// App-layer tests for <see cref="NavigationService"/> routing (architecture §10 Phase 1):
-/// the module-id → view-model map and the rejection of unknown module ids. A lightweight
-/// <see cref="IServiceProvider"/> stands in for the DI container so the routing logic is
-/// exercised without constructing the WPF view models or their dependencies.
+/// the module-id → view-model map (the <see cref="ModuleScreenRegistry"/>, roadmap E1)
+/// and the rejection of unknown module ids. A lightweight <see cref="IServiceProvider"/>
+/// stands in for the DI container so the routing logic is exercised without
+/// constructing the WPF view models or their dependencies.
 /// </summary>
 public class NavigationServiceTests
 {
@@ -58,8 +60,18 @@ public class NavigationServiceTests
             return null;
         });
 
+        // The same shape the composition root registers: one entry per module id.
+        var registry = new ModuleScreenRegistry(
+        [
+            new KeyValuePair<string, Func<IServiceProvider, object>>("system", sp => RuntimeHelpers.GetUninitializedObject(typeof(SystemInfoModuleViewModel))),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("stress", sp => RuntimeHelpers.GetUninitializedObject(typeof(CpuStressModuleViewModel))),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("keyboard", sp => RuntimeHelpers.GetUninitializedObject(typeof(KeyboardTestModuleViewModel))),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("mouse", sp => RuntimeHelpers.GetUninitializedObject(typeof(MouseTestModuleViewModel))),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("monitor", sp => RuntimeHelpers.GetUninitializedObject(typeof(MonitorTestModuleViewModel))),
+        ]);
+
         var shell = new ShellViewModel();
-        nav = new NavigationService(shell, provider);
+        nav = new NavigationService(shell, provider, registry);
 
         if (id is null)
         {
@@ -81,7 +93,7 @@ public class NavigationServiceTests
            || t == typeof(MouseTestModuleViewModel)
            || t == typeof(MonitorTestModuleViewModel);
 
-        private sealed class FuncServiceProvider(Func<Type, object?> resolve) : IServiceProvider
+    private sealed class FuncServiceProvider(Func<Type, object?> resolve) : IServiceProvider
     {
         public object? GetService(Type serviceType) => resolve(serviceType);
     }

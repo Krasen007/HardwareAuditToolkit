@@ -14,9 +14,11 @@
              next pattern in the cycle. -->
         <Border x:Name="PatternBorder" MouseDown="PatternSurface_MouseDown" />
 
-        <!-- Auto-hiding controls: a mouse-only "Back to controls" path and the
-             reusable Exit overlay (§6). Hidden after a few seconds of no mouse
-             movement; reappear on any mouse move. -->
+        <!-- Auto-hiding controls: a mouse-only "Back to controls" path. Hidden after
+             a few seconds of no mouse movement; reappear on any mouse move. There is
+             deliberately no Exit button here: "Back to controls" leaves the pattern
+             window without recording anything, and the global Ctrl+E hook is the one
+             abort (roadmap Phase 2). -->
         <StackPanel x:Name="OverlayPanel" Orientation="Horizontal"
                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16">
             <TextBlock x:Name="PatternIndicator" Foreground="#E8E8E8" FontSize="13"
@@ -26,10 +28,6 @@
                     Foreground="White" Background="#2D2D30"
                     BorderBrush="#555555" BorderThickness="1"
                     Cursor="Hand" Click="BackButton_Click" />
-            <!-- Exit Test is hidden in fullscreen pattern mode: the operator should
-                 only see "Back to controls", which returns to the monitor screen
-                 without cancelling the test. The global Ctrl+E hook still works. -->
-            <views:ExitOverlay Margin="10,0,0,0" Visibility="Collapsed" />
         </StackPanel>
     </Grid>
 </Window>

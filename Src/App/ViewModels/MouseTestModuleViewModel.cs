@@ -363,11 +363,9 @@ public sealed partial class MouseTestModuleViewModel : ObservableObject, IDispos
         WeakReferenceMessenger.Default.Unregister<MouseTestStatusMessage>(this);
         WeakReferenceMessenger.Default.Unregister<DeviceTopologyChangedMessage>(this);
 
-        // Leaving the screen must stop capture so no raw-input registration leaks
-        // (architecture Phase 7 cleanup, started in Phase 4).
-        if (_orchestrator.RunningModules.Any(m => m.ModuleId == "mouse"))
-        {
-            _orchestrator.CancelModule("mouse");
-        }
+        // Leaving the screen is a non-event (roadmap Phase 2, decision D1): stop
+        // capture so no raw-input registration leaks, but record nothing — the
+        // operator decided not to do this test now. Only Ctrl+E / Exit Test aborts.
+        _orchestrator.StopModule("mouse");
     }
 }

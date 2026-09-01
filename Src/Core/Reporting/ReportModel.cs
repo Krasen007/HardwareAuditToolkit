@@ -11,6 +11,11 @@ namespace HardwareAuditToolkit.Core.Reporting;
 /// </summary>
 public sealed class ReportModel
 {
+    /// <summary>Report contract version (roadmap E4). Bump on any breaking change to
+    /// the JSON shape so downstream readers can detect what they are parsing.</summary>
+    [JsonPropertyName("schemaVersion")]
+    public int SchemaVersion { get; init; } = 1;
+
     [JsonPropertyName("hostname")]
     public string Hostname { get; init; } = string.Empty;
 

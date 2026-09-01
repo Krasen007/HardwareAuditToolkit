@@ -1,46 +1,49 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using HardwareAuditToolkit.App.Services;
-using HardwareAuditToolkit.App.Views;
+using HardwareAuditToolkit.Core;
+using HardwareAuditToolkit.Core.Reporting;
 
 namespace HardwareAuditToolkit.App.ViewModels;
 
-public sealed partial class DashboardViewModel(INavigationService navigation, ReportExportService reportExport) : ObservableObject
+/// <summary>
+/// The dashboard. Roadmap E1: the card list is generated from the orchestrator's
+/// module roster (<c>IModuleMetadata</c>) — the single source of truth — and E3: each
+/// card carries the module's current session status so the operator sees the audit's
+/// shape (what ran, what passed, what's left) before exporting.
+/// </summary>
+public sealed class DashboardViewModel(TestOrchestrator orchestrator, AuditSession session, INavigationService navigation) : ObservableObject
 {
     public ObservableCollection<DashboardItemViewModel> Modules { get; } =
-    [
-        new DashboardItemViewModel("keyboard", "Keyboard Test", "Per-key coverage, WPM and accuracy.", "keyboard", true, navigation),
-        new DashboardItemViewModel("mouse", "Mouse Test", "Click/scroll/drag log and tracing accuracy.", "mouse", true, navigation),
-        new DashboardItemViewModel("monitor", "Monitor Test", "Fullscreen patterns and DDC/CI brightness.", "monitor", true, navigation),
-        new DashboardItemViewModel("system", "System Info", "WMI/CIM inventory: CPU, RAM, disk, BIOS.", "system", false, navigation),
-        new DashboardItemViewModel("stress", "CPU Stress Test", "Fixed-duration burn-in across all cores.", "stress", true, navigation),
-    ];
-
-    [RelayCommand]
-    private void Back()
-        => navigation.NavigateToDashboard();
+        [.. orchestrator.Modules.Select(m => new DashboardItemViewModel(
+            m.ModuleId,
+            m.Metadata.DisplayName,
+            m.Metadata.Description,
+            m.Metadata.Category,
+            m.Metadata.IsExclusive,
+            StatusFor(m.ModuleId, session),
+            navigation))];
 
     /// <summary>
-    /// Runs the §9.6 export cascade for the current session, then shows the outcome. A
-    /// hard failure is surfaced explicitly instead of showing the operator nothing
-    /// (roadmap C6); any partial success (file or clipboard) opens the result dialog.
+    /// The module's session status for its card: latest recorded result, or
+    /// "Running" when any run of this module is still in progress, or "Not run".
     /// </summary>
-    [RelayCommand]
-    private void ExportReport()
+    private static string StatusFor(string moduleId, AuditSession session)
     {
-        var result = reportExport.Export();
-        if (!result.Success)
+        var results = session.Modules
+            .Where(m => string.Equals(m.ModuleId, moduleId, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (results.Count == 0)
         {
-            MessageBox.Show(
-                result.Message ?? "The audit report could not be written to any location.",
-                "Export Failed",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            return;
+            return StatusDisplay.Name(TestStatus.NotRun);
         }
 
-        ExportResultDialog.ShowResult(result);
+        if (results.Any(r => r.Status == TestStatus.Running))
+        {
+            return StatusDisplay.Name(TestStatus.Running);
+        }
+
+        return StatusDisplay.Name(results[^1].Status);
     }
 }

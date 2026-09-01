@@ -11,26 +11,8 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <Border Grid.Row="0" Background="#1E1E1E" Padding="16,10"
-                BorderBrush="#3F3F46" BorderThickness="0,0,0,1">
-            <DockPanel LastChildFill="False">
-                <TextBlock DockPanel.Dock="Left" Text="Dashboard"
-                           FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF"
-                           VerticalAlignment="Center" />
-                <Button DockPanel.Dock="Right" Content="Export Report"
-                        Command="{Binding ExportReportCommand}"
-                        Padding="14,6" FontWeight="SemiBold" Foreground="White"
-                        Background="#2E7D32" BorderBrush="#1B5E20" BorderThickness="1"
-                        Cursor="Hand" />
-            </DockPanel>
-        </Border>
-
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="16">
+        <!-- Back / Export / Exit live in the persistent window header (MainWindow.xaml). -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="16">
             <ItemsControl ItemsSource="{Binding Modules}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -39,7 +21,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:DashboardItemViewModel}">
-                        <Border Width="240" Height="120" Margin="6" Padding="14"
+                        <Border Width="240" Height="130" Margin="6" Padding="14"
                                 CornerRadius="8" Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1">
                             <Border.InputBindings>
                                 <MouseBinding MouseAction="LeftClick"
@@ -53,10 +35,37 @@
                                         <TextBlock Text="exclusive" FontSize="10" Foreground="#CCCCCC" />
                                     </Border>
                                 </StackPanel>
+                                <!-- Roadmap E3: the audit's shape at a glance — what ran,
+                                     what passed, what's left — before exporting. -->
+                                <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="#BBBBBB" Margin="0,6,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#BBBBBB" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding StatusText}" Value="Passed">
+                                                    <Setter Property="Foreground" Value="#9AE6B0" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding StatusText}" Value="Failed">
+                                                    <Setter Property="Foreground" Value="#FF8A80" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding StatusText}" Value="Warning">
+                                                    <Setter Property="Foreground" Value="#FFD479" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding StatusText}" Value="Cancelled">
+                                                    <Setter Property="Foreground" Value="#FFD479" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding StatusText}" Value="Running">
+                                                    <Setter Property="Foreground" Value="#9ECBFF" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#BBBBBB"
-                                           TextWrapping="Wrap" Margin="0,8,0,0" />
+                                           TextWrapping="Wrap" Margin="0,4,0,0" />
                                 <TextBlock Text="{Binding Category}" FontSize="10" Foreground="#888888"
-                                           Margin="0,8,0,0" />
+                                           Margin="0,6,0,0" />
                             </StackPanel>
                         </Border>
                     </DataTemplate>

@@ -167,7 +167,9 @@ public sealed class TestOrchestrator : IDisposable
     }
 
     /// <summary>
-    /// Cancels a specific running module. Returns false when no such module is running.
+    /// Aborts a specific running module and records <see cref="TestStatus.Cancelled"/> —
+    /// the deliberate-abort path (Ctrl+E / Exit Test). Returns false when no such module
+    /// is running. Contrast with <see cref="StopModule"/>, the non-recording path.
     /// </summary>
     public bool CancelModule(string moduleId)
     {
@@ -193,7 +195,42 @@ public sealed class TestOrchestrator : IDisposable
         }
     }
 
-    /// <summary>Cancels every module currently running.</summary>
+    /// <summary>
+    /// Stops a running module <em>without recording anything</em> (roadmap Phase 2,
+    /// decision D1: leaving a test is a non-event). Used when the operator navigates
+    /// away or closes a screen: the operator decided not to do that test now, so the
+    /// appended <see cref="TestStatus.Running"/> result is removed and the module
+    /// reads as <see cref="TestStatus.NotRun"/> in the report. Returns false when no
+    /// such module is running.
+    /// </summary>
+    public bool StopModule(string moduleId)
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+
+            if (!_running.TryGetValue(moduleId, out var entry))
+            {
+                return false;
+            }
+
+            entry.Module.Cancel();
+
+            // A module whose Cancel() completes inline has already been removed from
+            // the running set and had its result recorded as Cancelled; the removal
+            // below erases that record either way.
+            if (_running.TryGetValue(moduleId, out var stillRunning) && ReferenceEquals(stillRunning.Module, entry.Module))
+            {
+                CompleteCancelledEntry(entry, "Stopped.");
+            }
+
+            _session.Modules.Remove(entry.Result);
+            UpdateOverallStatus();
+            return true;
+        }
+    }
+
+    /// <summary>Cancels every module currently running, recording <see cref="TestStatus.Cancelled"/>.</summary>
     public void CancelAll()
     {
         lock (_gate)
@@ -208,6 +245,32 @@ public sealed class TestOrchestrator : IDisposable
                     CompleteCancelledEntry(entry, "Cancelled by operator.");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Stops every running module without recording anything — the non-event
+    /// counterpart of <see cref="CancelAll"/> (see <see cref="StopModule"/>). Used on
+    /// app shutdown, where the report will never be read afterwards.
+    /// </summary>
+    public void StopAll()
+    {
+        lock (_gate)
+        {
+            ThrowIfDisposed();
+
+            foreach (var entry in _running.Values.ToList())
+            {
+                entry.Module.Cancel();
+                if (_running.TryGetValue(entry.Module.ModuleId, out var stillRunning) && ReferenceEquals(stillRunning.Module, entry.Module))
+                {
+                    CompleteCancelledEntry(entry, "Stopped.");
+                }
+
+                _session.Modules.Remove(entry.Result);
+            }
+
+            UpdateOverallStatus();
         }
     }
 

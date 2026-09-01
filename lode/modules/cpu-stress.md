@@ -15,7 +15,7 @@ best-effort without admin and cannot be relied on for a safety decision. Instead
   clamps to ≤300; metadata `MaxDuration` is 310s so the orchestrator's timeout is a
   backstop, not the primary stop),
 - a prominent manual **Stop test** control,
-- `Ctrl+E` and the exit overlay always available.
+- `Ctrl+E` and the header **Exit Test** button always available.
 
 Admin-mode opt-in with full sensor detail and a real thermal cutoff is deferred to
 v2.
@@ -83,16 +83,15 @@ item 3, roadmap D1).
 
 | Outcome | Trigger |
 |---|---|
-| `Passed` | the full target duration elapses (`Task.Delay` → `CompleteNaturally`) |
+| `Passed` | the full target duration elapses (`Task.Delay` → `CompleteNaturally`), **or** the operator presses **Stop** (`CompleteEarly`) — the finding states the achieved duration |
 | `Failed` | a burn-in worker throws |
-| `Cancelled` | **Stop test**, `Ctrl+E`, exit overlay, navigate away, or the 310s backstop |
+| `Cancelled` | `Ctrl+E` / header Exit Test, or the 310s backstop timeout |
+| (nothing) | navigating away or closing the app — `StopAll` records nothing (roadmap Phase 2) |
 
-**The `Cancelled` problem.** Pressing **Stop** — a normal, intended action — records
-`Cancelled` with the finding `"Burn-in stopped before completing the target
-duration."` A deliberate 30-second smoke test is therefore recorded exactly like an
-abandoned run, and one early stop drags the whole session's `OverallStatus` to
-`Cancelled`. This is the clearest case for open decision
-[D1](../plans/open-decisions.md).
+**Resolved (D1).** Stop is the intended end of a shortened burn-in, so it records
+`Passed` with `"Burn-in stopped by the operator after 0:30 of the 5:00 target."`
+instead of `Cancelled`. A deliberate 30-second smoke test no longer reads like an
+abandoned run, and one early stop no longer drags the session to `Cancelled`.
 
 ## Screen surface
 
@@ -121,7 +120,7 @@ other screen auto-starts without recording why.
 | ~~No display-sleep prevention~~ | ~~Zero `SetThreadExecutionState` calls in the solution. During a 5-minute run the monitor blanks and the operator assumes the machine crashed.~~ | Fixed — `SetThreadExecutionState` called on start, cleared on stop/cancel/dispose |
 | ~~No permissions notice for temperature~~ | ~~Honest `N/A` but no explanation that admin is required.~~ | Fixed — `UnavailableReason` propagated from provider to view model; shows "run as administrator" notice |
 | ~~Graph gutters instead of filling~~ | ~~A fixed 640×220 `Canvas` inside `Viewbox Stretch="Uniform"` — it scales but centres with side gutters on wide windows.~~ | Fixed — `Viewbox` now `Stretch="Fill"` and `HorizontalAlignment="Stretch"` |
-| Stop records `Cancelled` | A successful early stop is indistinguishable from abandonment. | B1 / D1 |
+| ~~Stop records `Cancelled`~~ | ~~A successful early stop is indistinguishable from abandonment.~~ | Fixed — `CompleteEarly()` resolves `Passed` with the achieved-duration finding |
 | Duplicated "is this a CPU reading?" predicate | The same `SensorName.Contains("CPU") \|\| HardwareName.Contains("CPU")` logic lives in both the module and the view model, and can drift. | — |
 | `BelowNormal` in a finding and on screen | Thread-priority detail leaks to the reader and the operator. | C5 |
 | Terminology drift | The report heading says "CPU Stress Test"; the findings say "Burn-in". | C5 |

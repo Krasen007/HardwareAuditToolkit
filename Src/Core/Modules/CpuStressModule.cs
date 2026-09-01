@@ -23,8 +23,11 @@ namespace HardwareAuditToolkit.Core.Modules;
 /// as <see cref="Messages.StressTelemetryMessage"/> so the view stays live.
 /// </para>
 /// <para>
-/// Completing the full duration resolves as <see cref="TestStatus.Passed"/>; an
-/// operator- or orchestrator-initiated early stop resolves as
+/// Completing the full duration resolves as <see cref="TestStatus.Passed"/>; a
+/// deliberate operator stop via <see cref="CompleteEarly"/> also resolves as
+/// <see cref="TestStatus.Passed"/> with the achieved duration recorded as a
+/// finding (a planned 30-second smoke test is a pass, not a cancellation).
+/// Only a genuine abort (Ctrl+E / Exit Test) records
 /// <see cref="TestStatus.Cancelled"/> (architecture §4).
 /// </para>
 /// </summary>
@@ -198,6 +201,29 @@ public sealed class CpuStressModule : ITestModule
     }
 
     /// <summary>
+    /// The operator's deliberate Stop button: the intended end of a shortened
+    /// burn-in. Resolves as <see cref="TestStatus.Passed"/> with a finding stating
+    /// the achieved duration — a planned 30-second smoke test must not read as an
+    /// abandoned run (roadmap Phase 2.4).
+    /// </summary>
+    public void CompleteEarly()
+    {
+        Action<TestStatus>? cb;
+        lock (_gate)
+        {
+            if (!IsRunning)
+            {
+                return;
+            }
+
+            cb = StopWorkers(TestStatus.Passed, stoppedEarly: true);
+        }
+
+        JoinWorkers();
+        cb?.Invoke(TestStatus.Passed);
+    }
+
+    /// <summary>
     /// Runs <see cref="Burn"/>, converting any worker-thread exception into a clean
     /// <see cref="TestStatus.Failed"/> rather than terminating the process. An
     /// uncaught exception on a background thread would otherwise crash the app
@@ -251,7 +277,7 @@ public sealed class CpuStressModule : ITestModule
     /// the callback (which may re-enter the orchestrator) can never deadlock
     /// against a concurrent Cancel holding the orchestrator lock.
     /// </summary>
-    private Action<TestStatus>? StopWorkers(TestStatus finalStatus)
+    private Action<TestStatus>? StopWorkers(TestStatus finalStatus, bool stoppedEarly = false)
     {
         _telemetryTimer?.Dispose();
         _telemetryTimer = null;
@@ -259,9 +285,11 @@ public sealed class CpuStressModule : ITestModule
         _cts?.Cancel();
 
         CurrentPhase = finalStatus == TestStatus.Passed ? ModulePhase.Complete : ModulePhase.Cancelled;
-        Findings.Add(finalStatus == TestStatus.Passed
-            ? $"Burn-in completed the full target duration of {_duration:g}."
-            : "Burn-in stopped before completing the target duration.");
+        Findings.Add(stoppedEarly
+            ? $"Burn-in stopped by the operator after {(DateTime.UtcNow - _startedAt):g} of the {_duration:g} target."
+            : finalStatus == TestStatus.Passed
+                ? $"Burn-in completed the full target duration of {_duration:g}."
+                : "Burn-in stopped before completing the target duration.");
 
         PublishTelemetry(running: false, finalStatus);
         var cb = _onComplete;

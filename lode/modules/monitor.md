@@ -41,17 +41,17 @@ rather than retrofitted.
 |---|---|
 | `Passed` | operator presses **Confirm patterns OK** |
 | `Failed` | operator presses **Flag defect** |
-| `Cancelled` | `Ctrl+E`, exit overlay from the control screen, navigate away, or the cap |
+| `Cancelled` | `Ctrl+E` / header Exit Test (the one abort), or the cap. Navigating away records nothing (roadmap Phase 2) |
 
 Perceptual check by design — architecture §5 says the operator's confirmation *is*
 the status for monitor uniformity. There is no objective criterion available.
 
-## The Exit-cancels bug — mitigated
+## The Exit-cancels bug — resolved
 
 [`../../todo.md`](../../todo.md) item 2, traced:
 
 ```
-ExitOverlay button (was present in MonitorPatternWindow)
+ExitOverlay button (no longer present anywhere; the header Exit Test remains)
   → ExitRequestedMessage
   → App.HandleExitRequested
   → orchestrator.CancelAll()
@@ -59,17 +59,12 @@ ExitOverlay button (was present in MonitorPatternWindow)
   → StopInternal(TestStatus.Cancelled, "Monitor test cancelled.")
 ```
 
-So the operator who used "Exit Test" from a fullscreen pattern got a report saying
-the monitor test was **cancelled** — even though they just finished looking at every
-pattern. "Back to controls" (`Close()`) does not cancel and leaves the test
-`Running`, which is the intended path.
-
-Two adjacent buttons, visually equivalent, opposite report outcomes. Compounded by
-auto-start: merely opening the control screen and leaving also stamps `Cancelled`.
-
-**Mitigation applied:** the `ExitOverlay` is hidden (`Visibility="Collapsed"`) in
-`MonitorPatternWindow`. The operator sees only **"Back to controls"**, which returns
-to the monitor screen without cancelling. The global `Ctrl+E` hook still works.
+From the fullscreen pattern window the operator now sees only **"Back to
+controls"** (`Close()`), which returns to the monitor screen and — after the
+roadmap Phase 2 change — records nothing when the monitor screen is left
+(`StopModule`). The keyboard-only abort from fullscreen is `Ctrl+E`, which still
+records `Cancelled`. The `ExitOverlay` control was deleted entirely (roadmap E2);
+the Exit Test button lives in the persistent window header.
 
 ## DDC/CI brightness
 
@@ -111,8 +106,8 @@ every other finding in the product.
 | Defect | Detail | Fix |
 |---|---|
 | ~~Exit from fullscreen records `Cancelled`~~ | ~~The operator's own complaint.~~ | Fixed — `ExitOverlay` hidden in `MonitorPatternWindow`; only "Back to controls" is visible |
-| Auto-start on `Loaded` | Opening and leaving the control screen stamps `Cancelled`. | B3 |
-| Start button dead after auto-start | `CanStart => !IsRunning && !IsCompleted`, and **Reset** is disabled while running, so there is no clean re-run path. | B3 |
+| ~~Auto-start on `Loaded`~~ | ~~Opening and leaving the control screen stamps `Cancelled`.~~ | Fixed (roadmap Phase 2.6) — no auto-start; explicit Start only |
+| ~~Start button dead after auto-start~~ | ~~`CanStart => !IsRunning && !IsCompleted`, and **Reset** is disabled while running, so there is no clean re-run path.~~ | Moot — no auto-start |
 | Brightness changes unrecorded | `ApplyBrightness` adds no finding or measurement. | C5 |
 | Declared capability unenforced | `RequiredCapabilities` is decorative. | A6-adjacent |
 | Doc/code mismatch | The view-model comment claims the control screen uses "the auto-hiding Exit overlay"; only the pattern window auto-hides. | C5 |

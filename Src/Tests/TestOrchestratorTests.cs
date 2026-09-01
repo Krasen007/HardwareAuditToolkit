@@ -203,6 +203,84 @@ public class TestOrchestratorTests
         Assert.Equal(2, session.Modules.Count);
     }
 
+    // --- Roadmap Phase 2: leaving a test is a non-event (decision D1) ---
+
+    [Fact]
+    public void StopModule_RemovesResult_ModuleReadsAsNotRun()
+    {
+        var session = new AuditSession();
+        var module = new FakeModule("keyboard", isExclusive: true);
+        using var orchestrator = new TestOrchestrator(session, [module]);
+
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+        Assert.True(orchestrator.StopModule("keyboard"));
+
+        // No Cancelled row, no finding — the module never happened.
+        Assert.Empty(session.Modules);
+        Assert.Equal(TestStatus.NotRun, session.OverallStatus);
+        Assert.False(module.IsRunning);
+        Assert.Empty(orchestrator.RunningModules);
+        Assert.Null(orchestrator.CurrentExclusiveModule);
+    }
+
+    [Fact]
+    public void StopModule_WhenNothingRunning_ReturnsFalse()
+    {
+        using var orchestrator = new TestOrchestrator(new AuditSession(), []);
+
+        Assert.False(orchestrator.StopModule("keyboard"));
+    }
+
+    [Fact]
+    public void StopModule_ErasesInlineCancelRecord()
+    {
+        // A module whose Cancel() completes inline (keyboard/mouse/monitor shape)
+        // records Cancelled through its callback; the non-recording stop must
+        // still leave nothing behind.
+        var session = new AuditSession();
+        var module = new FakeModule("keyboard", isExclusive: true) { CompleteOnCancel = true };
+        using var orchestrator = new TestOrchestrator(session, [module]);
+
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+        Assert.True(orchestrator.StopModule("keyboard"));
+
+        Assert.Empty(session.Modules);
+        Assert.Equal(TestStatus.NotRun, session.OverallStatus);
+    }
+
+    [Fact]
+    public void StopAll_RemovesEveryRunningResult()
+    {
+        var session = new AuditSession();
+        var keyboard = new FakeModule("keyboard", isExclusive: true);
+        var system = new FakeModule("system", isExclusive: false);
+        using var orchestrator = new TestOrchestrator(session, [keyboard, system]);
+
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+        Assert.True(orchestrator.TryStartModule("system", out _));
+        orchestrator.StopAll();
+
+        Assert.Empty(session.Modules);
+        Assert.Equal(TestStatus.NotRun, session.OverallStatus);
+        Assert.Empty(orchestrator.RunningModules);
+    }
+
+    [Fact]
+    public void CancelModule_StillRecordsCancelled_TheOneAbort()
+    {
+        // Ctrl+E / Exit Test remains the only recorded abort (roadmap Phase 2.3).
+        var session = new AuditSession();
+        var module = new FakeModule("keyboard", isExclusive: true);
+        using var orchestrator = new TestOrchestrator(session, [module]);
+
+        Assert.True(orchestrator.TryStartModule("keyboard", out _));
+        Assert.True(orchestrator.CancelModule("keyboard"));
+
+        var result = Assert.Single(session.Modules);
+        Assert.Equal(TestStatus.Cancelled, result.Status);
+        Assert.Equal(TestStatus.Cancelled, session.OverallStatus);
+    }
+
     private sealed class FakeModule(string id, bool isExclusive, TimeSpan? maxDuration = null, TestStatus? autoComplete = null) : ITestModule
     {
         private readonly TestStatus? _autoCompleteStatus = autoComplete;

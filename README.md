@@ -46,7 +46,7 @@ dotnet build Src\HardwareAuditToolkit.sln
 dotnet test  Src\HardwareAuditToolkit.sln
 ```
 
-Current state: **zero warnings, 61 xunit tests passing.** `F5` in VS Code launches
+Current state: **zero warnings, 78 xunit tests passing.** `F5` in VS Code launches
 the WPF app (see `.vscode/launch.json`).
 
 ## Publish
@@ -64,36 +64,48 @@ assert the single-file profile emits exactly one `.exe`.
 
 ## What the app does today
 
-**Shell.** A dashboard of five module cards. Selecting one replaces the window
-content with that module's screen; the outgoing view model is disposed so
-event-bus subscriptions and raw-input registrations never leak across navigation.
+**Shell.** A dashboard of five module cards (generated from the modules'
+`IModuleMetadata` — one source of truth) each showing that module's current
+session status, so the audit's shape is visible before exporting. Selecting a
+card replaces the window content with that module's screen; the outgoing view
+model is disposed so event-bus subscriptions and raw-input registrations never
+leak across navigation. A persistent window header carries **Back**,
+**Export Report** and **Exit Test** on every screen.
 
 **Exit paths.** Every screen offers a mouse-only and a keyboard-only way out,
 independently:
 
 - `Ctrl+E` — global low-level hook on its own dedicated thread, so it stays
   responsive under full CPU load.
-- **Exit Test** overlay — present on all six views and on the fullscreen pattern
-  window (where it auto-hides after 3s of no mouse movement).
-- **Native close (X)** — the only path that actually quits the application.
-  `Ctrl+E` and the overlay cancel the running module and return to the dashboard.
+- **Exit Test** — a button in the persistent header (§6); the mouse twin of
+  `Ctrl+E`.
+
+`Ctrl+E` and **Exit Test** are the *one deliberate abort*: they cancel the
+running module, record `Cancelled`, and return to the dashboard. **Navigating
+away and native close record nothing** — leaving a test is a non-event, and a
+module that was merely opened reads as `Not run` in the report. The CPU-stress
+**Stop** button is not an abort either: it ends a deliberate shortened burn-in
+and records `Passed` with the achieved duration. Only the native close (X)
+quits the application.
 
 **Modules.**
 
 | Module | Exclusive | Starts | Passes when |
 |---|---|---|---|
-| Keyboard | yes | on screen load | operator confirms (coverage recorded as a finding, not a verdict) |
-| Mouse | yes | on screen load | operator confirms (no coverage requirement) |
-| Monitor | yes | on screen load | operator confirms patterns render correctly |
-| System Info | no | on screen load | WMI inventory collected |
-| CPU Stress | yes | **explicit Start** | the full target duration elapses (300s cap); display sleep is prevented during the run |
+| Keyboard | yes | explicit Start | operator confirms (coverage recorded as a finding, not a verdict) |
+| Mouse | yes | explicit Start | operator confirms (no coverage requirement) |
+| Monitor | yes | explicit Start | operator confirms patterns render correctly |
+| System Info | no | on screen open | WMI inventory collected |
+| CPU Stress | yes | **explicit Start** | the full target duration elapses (300s cap); a deliberate early Stop also records `Passed` with the achieved duration |
 
 Perceptual checks record the operator's confirmation as the status, by design —
-there is no objective pass criterion for monitor uniformity. Keyboard coverage is
-the one objective criterion in the product.
+there is no objective pass criterion for monitor uniformity or key feel. Coverage
+(key presses, clicks, scroll ticks, pattern views) is reported as a measurement
+alongside the operator's verdict, never as a verdict that overrides it.
 
-**Reporting.** `Export Report` lives on the dashboard. It writes a JSON session
-file plus a self-contained printable HTML report through the §9.6 write-path
+**Reporting.** `Export Report` lives in the persistent window header. It writes a
+JSON session file (carrying `schemaVersion`) plus a self-contained printable HTML
+report through the §9.6 write-path
 cascade: app directory → Desktop → `%TEMP%` → manual folder picker → clipboard.
 Each candidate is probed with a real write-test first, so a USB stick pulled
 mid-write costs nothing and the in-memory session survives.
@@ -108,22 +120,15 @@ observable on a published build without a debugger.
 ## Known gaps
 
 These are real and documented rather than forgotten. See
-[`../taste-audit.md`](../taste-audit.md) for full evidence and a prioritised plan.
+[`../taste-audit.md`](../taste-audit.md) for full evidence.
 
-- **The report understates what was not tested.** Only modules that were *started*
-  appear, so a session where just System Info auto-ran exports as
-  `Overall status: Passed` without mentioning the four untested devices.
-- **A first export stamps itself "in progress"**, because `CompletedAt` is set
-  after serialisation.
-- **`TestStatus.Skipped` and `TestStatus.Unsupported` are never assigned**, and
-  `Cancelled` covers five unrelated situations, including deliberately stopping a
-  burn-in early.
-- **The operator cannot describe a defect.** `FlagDefect(note)` accepts text, but
-  every call site passes a hardcoded constant, so all failures read identically.
-- **`SessionCheckpointStore` is write-only** — no code reads a checkpoint back,
-  so the stated crash-recovery guarantee is not implemented.
-- **No persistent header.** Each view carries its own copy of the exit overlay and
-  its own "Back to dashboard" button.
+- **Sub-screens measure the operator.** The keyboard WPM test and the mouse
+  tracing test grade the human, not the hardware; neither affects any status.
+- **`Failed` means two things** — an operator-flagged defect or an internal
+  fault. Findings prose distinguishes them, but the status alone does not.
+- **Mid-run exports show partial data.** Findings and measurements are copied
+  into the session only at completion, so exporting mid-run shows a `Running`
+  row with an empty detail section.
 
 **Manual pre-ship items** (cannot be satisfied in code): Authenticode signing via
 the org PKI, an EDR pass before wide rollout, and a manual walk of every exit path

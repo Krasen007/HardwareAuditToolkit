@@ -9,9 +9,6 @@
              d:DataContext="{d:DesignInstance vm:SystemInfoModuleViewModel}"
              d:DesignHeight="540" d:DesignWidth="860">
     <Grid Background="#1E1E1E">
-        <!-- Reusable mouse-only exit path, pinned top-right (§6). -->
-        <views:ExitOverlay HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16" />
-
         <Grid Margin="20,16,20,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -83,8 +80,6 @@
                 </Border>
             </Grid>
 
-            <Button Grid.Row="2" Content="Back to dashboard" Command="{Binding BackCommand}"
-                    HorizontalAlignment="Left" Margin="0,14,0,0" Padding="16,8" FontSize="14" />
         </Grid>
     </Grid>
 </UserControl>

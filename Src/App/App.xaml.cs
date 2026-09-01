@@ -64,6 +64,7 @@ public partial class App : Application
         var deviceChange = _services.GetRequiredService<DeviceChangeService>();
         shell.Navigation = navigation;
         shell.DeviceChange = deviceChange;
+        shell.ReportExport = _services.GetRequiredService<ReportExportService>();
         shell.ShowDashboard();
 
         var mainWindow = _services.GetRequiredService<MainWindow>();
@@ -140,8 +141,10 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Native window close (X) is the actual app-quit path (§6). It cancels any
-    /// running module, stamps the session, and shuts down.
+    /// Native window close (X) is the actual app-quit path (§6). It stops any
+    /// running module <em>without recording</em> (roadmap Phase 2: on shutdown the
+    /// report is never read, so a close is a non-event, not an abort), stamps the
+    /// session, and shuts down.
     /// </summary>
     private void OnMainWindowClosing(object? sender, CancelEventArgs e)
     {
@@ -154,7 +157,7 @@ public partial class App : Application
         e.Cancel = true;
 
         var orchestrator = _services?.GetRequiredService<TestOrchestrator>();
-        orchestrator?.CancelAll();
+        orchestrator?.StopAll();
 
         var session = _services?.GetRequiredService<AuditSession>();
         if (session is not null && session.CompletedAt is null)
@@ -174,6 +177,20 @@ public partial class App : Application
         // Phase 7 — one shared, file-backed diagnostics sink for all fault-guard paths.
         services.AddSingleton<IDiagnosticLog, FileDiagnosticLog>();
         services.AddSingleton<INavigationService, NavigationService>();
+
+        // Roadmap E1 — the single routing table: module id → screen view-model
+        // factory. The dashboard cards are generated from the same modules'
+        // IModuleMetadata, so a new module registers one entry here (plus its
+        // DI/VM/DataTemplate entries) instead of editing a dashboard list and a
+        // navigation switch.
+        services.AddSingleton(new ModuleScreenRegistry(
+        [
+            new KeyValuePair<string, Func<IServiceProvider, object>>("system", sp => sp.GetRequiredService<SystemInfoModuleViewModel>()),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("stress", sp => sp.GetRequiredService<CpuStressModuleViewModel>()),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("keyboard", sp => sp.GetRequiredService<KeyboardTestModuleViewModel>()),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("mouse", sp => sp.GetRequiredService<MouseTestModuleViewModel>()),
+            new KeyValuePair<string, Func<IServiceProvider, object>>("monitor", sp => sp.GetRequiredService<MonitorTestModuleViewModel>()),
+        ]));
 
         // Phase 2 — providers and modules.
         services.AddSingleton<SystemInfoProvider>();

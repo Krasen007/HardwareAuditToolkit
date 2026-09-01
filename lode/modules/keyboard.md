@@ -52,7 +52,7 @@ else
 |---|---|
 | `Passed` | operator confirms (coverage is recorded as a finding, not a verdict) |
 | `Failed` | operator presses **Flag defective key** |
-| `Cancelled` | `Ctrl+E`, exit overlay, navigate away, or the 30-minute cap |
+| `Cancelled` | `Ctrl+E` / header **Exit Test** (the one deliberate abort), or the 30-minute cap. Navigating away records nothing — the module reads `Not run` (roadmap Phase 2) |
 
 The module transitions to `AwaitingOperatorConfirmation` once all keys are pressed,
 but `Confirm` is enabled throughout `IsRunning` — so the operator can confirm early.
@@ -85,7 +85,8 @@ Ctrl+E or Exit Test to leave. Confirm when done."*
 
 Raw-input registration is torn down in **both** `Cancel()` and view-model
 `Dispose()`, so navigating away never leaks keyboard capture. The view model also
-calls `CancelModule` on disposal — which is why walking away records `Cancelled`.
+calls `StopModule` on disposal — leaving records nothing; the module reads
+`Not run` (roadmap Phase 2).
 
 ## Known defects
 

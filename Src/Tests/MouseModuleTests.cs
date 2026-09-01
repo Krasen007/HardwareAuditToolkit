@@ -154,6 +154,38 @@ public class MouseModuleTests
     }
 
     [Fact]
+    public void Module_ZeroEvidenceConfirm_PassedWithCoverageSummary()
+    {
+        // Roadmap Phase 3 (decision D2): the operator is authoritative — zero
+        // clicks/scrolls/drags still Passes on confirmation, and the coverage is
+        // reported as a measurement (counts), never as a verdict word.
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("mouse", out _));
+
+        module.Confirm();
+
+        var result = GetSessionResult(orchestrator);
+        Assert.Equal(TestStatus.Passed, result.Status);
+        Assert.Contains(result.Findings, f => (f ?? string.Empty).Contains("Clicks — L:0 R:0 M:0", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.Findings, f => (f ?? string.Empty).Contains("insufficient", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Module_FlagDefectNote_ReachesTheRecord()
+    {
+        // Roadmap Phase 3: the operator's defect text reaches the recorded result.
+        var module = BuildModule(out var fake, out var orchestrator);
+        Assert.True(orchestrator.TryStartModule("mouse", out _));
+
+        module.FlagDefect("Right button double-fires.");
+
+        var result = GetSessionResult(orchestrator);
+        Assert.Equal(TestStatus.Failed, result.Status);
+        Assert.Contains("Right button double-fires.", result.Findings);
+        Assert.True(fake.Stopped);
+    }
+
+    [Fact]
     public void Module_Cancel_CancelledAndStopsCapture()
     {
         var module = BuildModule(out var fake, out var orchestrator);

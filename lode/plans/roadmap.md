@@ -4,6 +4,35 @@ Rebuilt 2026-08-31 after the owner resolved all three open decisions
 ([open-decisions.md](open-decisions.md), §"Resolved"). Supersedes the original
 Pass A–E ordering. Based on the tree at commit `0386903` ("C1–C9 all done").
 
+**Status: Phases 1–4 are DONE** (landed 2026-08-31). What remains is Phase 5
+(manual pre-ship work) and the owner-deferred v2 list. The build is zero-warning
+with **78 xunit tests passing**.
+
+- **Phase 1 (done):** checkpoint store deleted (D3).
+- **Phase 2 (done):** leaving is a non-event — `StopModule`/`StopAll` (non-recording)
+  used by navigation disposal and window close; only Ctrl+E / Exit Test aborts and
+  records `Cancelled`; CPU-stress Stop resolves `Passed` with the achieved duration
+  (`CpuStressModule.CompleteEarly`); one documented auto-start policy (explicit Start
+  for the four exclusive tests; System Info collects on screen open); unattended
+  timeout keeps `Cancelled` (documented in
+  [`../reporting/status-vocabulary.md`](../reporting/status-vocabulary.md)).
+- **Phase 3 (done):** operator is authoritative everywhere — verified no path
+  overrides/downgrades a Confirm/FlagDefect; coverage is a measurement in findings;
+  tests added for zero-evidence Confirm (keyboard + mouse) and defect-note-to-record.
+- **Phase 4 (done):** E1 dashboard built from `TestOrchestrator.Modules` metadata +
+  `ModuleScreenRegistry` replacing the routing switch; E2 persistent header in
+  `MainWindow.xaml` (Back/Export/Exit), per-view overlays and Back buttons deleted
+  (`ExitOverlay` control removed); E3 per-module status text on dashboard cards;
+  E4 `schemaVersion: 1` in the JSON, golden files regenerated; README rewritten.
+
+```mermaid
+graph LR
+    P1[Phase 1: Delete checkpoints - done] --> P2[Phase 2: Exit semantics - done]
+    P2 --> P3[Phase 3: Trust model - done]
+    P3 --> P4[Phase 4: Coherence - done]
+    P4 --> P5[Phase 5: Ship checklist]
+```
+
 **Already landed and no longer planned:** Pass A subset (A4/A6/A7/A8), all of
 Pass C (C1–C9, including the report DTO `ReportModel` and golden-file tests),
 all of Pass D (display sleep, sensor reason, graph fill). A1/A2 (WPM + duck
@@ -11,6 +40,11 @@ sub-screens) and A5 (dashboard badge) are **deferred by owner — do not do them
 
 What remains is exactly the work the three decisions unblocked, plus the
 coherence cleanup. Nothing below is a new feature.
+
+**UPDATE (2026-08-31, later session): Phases 2–4 have landed.** The detailed
+phase sections below are kept as the original specification; the current
+behaviour is described in `architecture/exit-and-navigation.md`,
+`reporting/status-vocabulary.md`, `modules/*` and the source itself.
 
 ```mermaid
 graph LR

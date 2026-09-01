@@ -9,19 +9,29 @@ Preserve this through any refactor.
 ```mermaid
 graph TD
     K[Ctrl+E - global hook, own thread] --> M[ExitRequestedMessage]
-    B[Exit Test overlay - every view] --> M
+    B[Exit Test button - persistent header] --> M
     M --> H[App.HandleExitRequested]
-    H --> CA[orchestrator.CancelAll]
+    H --> CA[orchestrator.CancelAll - records Cancelled]
     H --> ND[navigation.NavigateToDashboard]
     X[Native close X] --> OC[App.OnMainWindowClosing]
-    OC --> CA2[CancelAll]
+    OC --> SA[orchestrator.StopAll - records nothing]
     OC --> SD[Shutdown - the only app quit]
-    ESC[Esc] --> NOTE[confirmation elsewhere; plain data in the keyboard module]
+    NAV[Navigate away / VM Dispose] --> ST[orchestrator.StopModule - records nothing]
 ```
 
-**Critical distinction:** `Ctrl+E` and the Exit overlay **do not quit the app**.
-They cancel the running module and return to the dashboard. Only the native window
-close ends the process.
+**Exit semantics (roadmap Phase 2, decision D1 — landed):** leaving a test is a
+non-event. `TestOrchestrator.StopModule`/`StopAll` stop the module and **remove
+the appended `Running` result from the session**, so an opened-but-left module
+reads as `Not run` with no finding. Only a deliberate abort — `Ctrl+E` or the
+header **Exit Test** button, both via `ExitRequestedMessage` → `CancelAll` —
+records `Cancelled`. The CPU-stress **Stop** button is a third, deliberate
+ending: `CpuStressModule.CompleteEarly()` resolves `Passed` with a finding
+stating the achieved duration.
+
+**Critical distinction:** `Ctrl+E` and the header **Exit Test** button **do not
+quit the app**. They abort the running module (recording `Cancelled`) and return
+to the dashboard. Only the native window close ends the process — and it now
+records nothing (`StopAll`).
 
 ```csharp
 // App.HandleExitRequested
@@ -68,20 +78,21 @@ testing, so it has no native chrome. It relies on:
   reappears on `MouseMove`), and
 - `Ctrl+E`.
 
-It carries **two** buttons that hide and show together:
+It carries **one** button:
 
 | Button | Action | Recorded result |
 |---|---|---|
-| Back to controls | `Close()` | nothing — test stays `Running` |
-| Exit Test (Ctrl+E) | `ExitRequestedMessage` | **`Cancelled`** |
+| Back to controls | `Close()` | nothing — the module reads as `Not run` when the monitor screen is left |
+| Ctrl+E (keyboard-only) | `ExitRequestedMessage` | **`Cancelled`** |
 
-They look equivalent and do opposite things. This is
-[`../../todo.md`](../../todo.md) item 2 and open decision
-[D1](../plans/open-decisions.md).
+The mouse-only "Back to controls" and the keyboard-only `Ctrl+E` are each
+independently sufficient to leave.
 
 ## Navigation and disposal
 
-`NavigationService` is a `moduleId → view model` switch plus one critical rule:
+`NavigationService` is view-model-first navigation over the
+`ModuleScreenRegistry` (roadmap E1): one `moduleId → view-model factory` table
+built in the DI composition root. Plus one critical rule:
 
 ```csharp
 private void SetScreen(object screen)
@@ -99,34 +110,34 @@ to `ShellViewModel.CurrentScreen`, and a `DataTemplate` per view model type pick
 the view.
 
 **Invariant:** every module view model that subscribes in its constructor must
-unsubscribe in `Dispose()`, and must cancel its module there too. Keyboard and
-mouse view models call `CancelModule` on disposal, which is why walking away from a
-started test records `Cancelled`.
+unsubscribe in `Dispose()`, and must stop its module there too. Keyboard, mouse
+and monitor view models call `StopModule` on disposal, which stops capture but
+records nothing — leaving is a non-event (roadmap Phase 2). The shell also tracks
+`IsDashboard` (set by `NavigationService.SetScreen`) to show/hide the header's
+Back button.
 
 **Corollary:** module view models must be registered `AddTransient`. A singleton
 would be disposed on first navigation away and never resubscribe. See
 [`../practices.md`](../practices.md).
 
-## Auto-start policy is currently inconsistent
+## Auto-start policy — decided (roadmap Phase 2.6, landed)
+
+One policy for all five modules, documented in `KeyboardTestView.xaml.cs` (with
+pointers from the other views):
 
 | Screen | Starts the module |
 |---|---|
-| Keyboard | on `Loaded` |
-| Mouse | on `Loaded` |
-| Monitor | on `Loaded` |
-| System Info | in the **view-model constructor** |
-| CPU Stress | **only on explicit Start** |
+| Keyboard | **explicit Start only** |
+| Mouse | **explicit Start only** |
+| Monitor | **explicit Start only** |
+| System Info | in the view-model **constructor** (the one deliberate exception) |
+| CPU Stress | **explicit Start only** |
 
-Only the CPU stress screen documents its choice, and it is the one that got it
-right:
-
-```csharp
-// Deliberate: NO auto-start — the operator starts the burn-in explicitly, so the
-// machine isn't loaded the moment the screen opens.
-```
-
-The monitor case is actively harmful: auto-start means merely opening the screen
-and leaving stamps `Cancelled` in the report. Roadmap B3.
+The rule: *any module whose run has a cost or a verdict starts only when the
+operator presses Start*; auto-start hides "not run" from the operator and makes
+merely opening a screen look like an audit. System Info is exempt because it is a
+read-only snapshot with no verdict, no operator time and no machine cost — and its
+snapshot feeds the session's `machineId`.
 
 ## Single-instance activation
 

@@ -1,7 +1,6 @@
 # Testing
 
-`Src/Tests/` — xunit, 11 files, **61 executed cases, all passing**, no hardware
-required.
+`Src/Tests/` — xunit, **78 executed cases, all passing**, no hardware required.
 
 ```powershell
 dotnet test Src\HardwareAuditToolkit.sln
@@ -11,15 +10,15 @@ dotnet test Src\HardwareAuditToolkit.sln
 
 | File | Cases | Substance |
 |---|---|---|
-`TestOrchestratorTests.cs` | 13 | **Strongest file.** Exclusivity, single-start, precondition rejection, cancel→`Cancelled`, timeout force-cancel, the double-record regression, `Start` throws→`Failed`, restart appends a second record |
-`KeyboardModuleTests.cs` | 8 | Layout uniqueness/labels, all-keys→`Passed`, missing→`Warning`, flag→`Failed`, cancel stops capture, out-of-layout keys ignored, repeat counter |
-`MouseModuleTests.cs` | 8 | Click-vs-drag classification incl. same-sample release edge cases, flag/cancel, trace measurement |
+`TestOrchestratorTests.cs` | 18 | **Strongest file.** Exclusivity, single-start, precondition rejection, abort cancel→`Cancelled`, **non-event `StopModule`/`StopAll` (results removed)**, timeout force-cancel, the double-record regression, `Start` throws→`Failed`, restart appends a second record |
+`KeyboardModuleTests.cs` | 10 | Layout uniqueness/labels, all-keys→`Passed`, missing→`Passed`+finding, **zero-evidence→`Passed`**, flag→`Failed` with the operator's note, cancel stops capture, out-of-layout keys ignored, repeat counter |
+`MouseModuleTests.cs` | 10 | Click-vs-drag classification incl. same-sample release edge cases, **zero-evidence confirm→`Passed` with counts finding**, flag/cancel, trace measurement |
 `ReportExportTests.cs` | 7 | Cascade: writes pair, JSON round-trip, picker fallback, clipboard fallback, total failure, null guards. **One** HTML test |
 `MonitorModuleTests.cs` | 6 | Confirm/flag/cancel, `ApplyBrightness` delegation, DDC-unsupported still passes |
 `Phase2ModuleTests.cs` | 5 | DI discovery, system info terminal state, stress start/cancel, sensor smoke test, DI lifetimes |
 `ReportExportServiceTests.cs` | 4 | App-layer cascade + `CompletedAt` semantics |
 `NavigationServiceTests.cs` | 2 (7 cases) | id→type routing map |
-`CpuStressFaultInjectionTests.cs` | 1 | **High value.** Injected worker throw → `Failed` + finding, process survives |
+`CpuStressFaultInjectionTests.cs` | 2 | **High value.** Injected worker throw → `Failed` + finding, process survives; `CompleteEarly` → `Passed` + achieved-duration finding |
 
 ## Conventions
 

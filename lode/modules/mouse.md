@@ -61,13 +61,14 @@ cb = StopInternal(TestStatus.Passed, "Passed — operator confirmed all mouse fu
 | Outcome | Trigger |
 |---|---|
 | `Passed` | operator confirms — **no coverage requirement whatsoever** |
-| `Failed` | operator presses **Flag defective** |
-| `Cancelled` | `Ctrl+E`, exit overlay, navigate away, or the 30-minute cap |
+| `Failed` | operator presses **Flag defective** (the operator's note reaches the report) |
+| `Cancelled` | `Ctrl+E` / header Exit Test (the one abort), or the 30-minute cap. Navigating away records nothing (roadmap Phase 2) |
 | `Warning` | **never produced** |
 
-Zero clicks, zero scrolls, zero drags still yields `Passed`. This is the opposite
-philosophy to the keyboard module, which overrides the operator on incomplete
-coverage — open decision [D2](../plans/open-decisions.md).
+Zero clicks, zero scrolls, zero drags still yields `Passed`, with the counts
+(`Clicks — L:0 R:0 M:0; wheel ticks:0; drags:0.`) recorded as a finding — a
+measurement, never a verdict. The keyboard module now follows the same rule
+(decision [D2](../plans/open-decisions.md) landed, roadmap Phase 3).
 
 Because `Warning` is never emitted, the `TestStatus.Warning` display arm that used to
 live in the view model's status switch was removed in roadmap A8 (it was dead code).

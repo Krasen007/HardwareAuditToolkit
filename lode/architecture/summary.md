@@ -113,7 +113,7 @@ traffic. Messages live in `Core/Messages/`:
 | `StressTelemetryMessage` | `CpuStressModule` | CPU VM |
 | `SensorReadingsMessage` | sensor provider (ambient) | CPU VM |
 | `DeviceTopologyChangedMessage` | `DeviceChangeService` | mouse VM, monitor VM |
-| `ExitRequestedMessage` | exit overlay, `Ctrl+E` hook | `App` |
+| `ExitRequestedMessage` | header Exit Test button, `Ctrl+E` hook | `App` |
 
 **Registrations are weak**, so the subscriber must be kept alive by DI. This is the
 second reason module view models are resolved from the container rather than
@@ -131,10 +131,13 @@ constructed ad hoc, and the reason they must be transient — see
 
 ## Known structural debt
 
-- **Three sources of truth for the module list**: `IModuleMetadata`, the hardcoded
-  list in `DashboardViewModel`, and a string `switch` in `NavigationService`.
-  A fourth — the `ModulePlaceholderViewModel` scaffolding dictionary — was removed in
-  roadmap A4. Adding a module still means editing three places. Roadmap E1.
-- **No persistent header.** `MainWindow.xaml` is a bare `ContentControl`; each of
-  the six views copy-pastes its own exit overlay and "Back to dashboard" button.
-  Roadmap E2.
+- ~~Three sources of truth for the module list~~ **Resolved (roadmap E1):** the
+  dashboard is generated from `TestOrchestrator.Modules` / `IModuleMetadata`, and
+  routing goes through the `ModuleScreenRegistry` — one table in
+  `App.ConfigureServices`. Adding a module touches the module class, its DI/VM
+  registrations, the registry entry, and a `DataTemplate`.
+- ~~No persistent header~~ **Resolved (roadmap E2):** `MainWindow.xaml` carries a
+  persistent header (Back / Export Report / Exit Test) bound to `ShellViewModel`;
+  the per-view `ExitOverlay` controls and "Back to dashboard" buttons were deleted
+  (the `ExitOverlay` control itself is gone; the pattern window keeps its own
+  auto-hiding "Back to controls" panel).

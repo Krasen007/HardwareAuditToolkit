@@ -20,7 +20,8 @@ namespace HardwareAuditToolkit.App.ViewModels;
 /// exposes DDC/CI brightness control (gracefully disabled when unsupported), and
 /// launches the fullscreen pattern window. Start/Confirm/Flag are each
 /// independent of the global exit paths. The pattern window is a separate
-/// fullscreen screen that reuses the auto-hiding Exit overlay (§6).
+/// fullscreen screen with its own auto-hiding "Back to controls" panel; the
+/// global Ctrl+E hook is the one abort from there (roadmap Phase 2).
 /// </summary>
 public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisposable
 {
@@ -322,9 +323,10 @@ public sealed partial class MonitorTestModuleViewModel : ObservableObject, IDisp
             _dispatcher.Invoke(win.Close);
         }
 
-        if (_orchestrator.RunningModules.Any(m => m.ModuleId == "monitor"))
-        {
-            _orchestrator.CancelModule("monitor");
-        }
+        // Leaving the screen is a non-event (roadmap Phase 2, decision D1): stop
+        // the module and close the pattern window so no exclusive-module state
+        // leaks across navigation, but record nothing — the operator decided not
+        // to do this test now. Only Ctrl+E / Exit Test aborts.
+        _orchestrator.StopModule("monitor");
     }
 }

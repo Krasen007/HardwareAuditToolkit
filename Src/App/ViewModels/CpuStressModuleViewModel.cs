@@ -122,8 +122,11 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
                 IsCompleted = true;
                 FinalStatusText = status switch
                 {
-                    TestStatus.Passed => "Completed — full duration reached.",
-                    TestStatus.Cancelled => "Stopped by operator.",
+                    // Early stop and full completion both resolve as Passed; the
+                    // achieved-vs-target duration is what tells the reader which
+                    // kind of run this was.
+                    TestStatus.Passed => $"Completed — {ElapsedText} of the {TargetText} target achieved.",
+                    TestStatus.Cancelled => "Aborted by operator.",
                     _ => $"Ended ({status}).",
                 };
                 StatusDetail = FinalStatusText;
@@ -273,7 +276,7 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
         _stress.Duration = TimeSpan.FromSeconds(CpuStressModule.DefaultDurationSeconds);
         IsCompleted = false;
         FinalStatusText = string.Empty;
-        StatusDetail = "Burn-in running. Ctrl+E or Exit Test stops the app; Stop ends just this test.";
+        StatusDetail = "Burn-in running. Ctrl+E or Exit Test aborts the run; Stop ends this test early and records the achieved duration.";
         LoadPoints = [];
         TempPoints = [];
         _loadSamples.Clear();
@@ -286,7 +289,13 @@ public sealed partial class CpuStressModuleViewModel : ObservableObject, IDispos
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     private void StopTest()
-        => _orchestrator.CancelModule("stress");
+    {
+        // The Stop button ends a deliberate, shortened burn-in — the intended end
+        // of the test, not an abort. It resolves as Passed with the achieved
+        // duration recorded as a finding (roadmap Phase 2.4). Only Ctrl+E / Exit
+        // Test aborts and records Cancelled.
+        _stress.CompleteEarly();
+    }
 
     private bool CanStart => !IsRunning;
     private bool CanStop => IsRunning;
